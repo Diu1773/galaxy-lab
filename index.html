@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>은하와 우주 실험실</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8C%8C%3C/text%3E%3C/svg%3E">
+<style>
+:root{--bg:#070a1f;--panel:#11163a;--panel2:#1a2050;--line:#2c3478;--ink:#eef0ff;--muted:#a3abdf;--gold:#f4b942;--violet:#7f5af0;--teal:#2cb1bc;--coral:#e4572e}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;background:var(--bg);color:var(--ink);font-family:"Malgun Gothic","Apple SD Gothic Neo","Noto Sans KR",sans-serif;-webkit-tap-highlight-color:transparent}
+body{background:radial-gradient(ellipse at 50% -10%,#1b2163 0%,var(--bg) 62%) fixed}
+a{color:var(--teal)}
+.wrap{max-width:1100px;margin:0 auto;padding:clamp(14px,3vw,30px)}
+.hero{text-align:center;padding:4px 0 10px}
+.hero .logo{font-size:clamp(46px,7vw,72px);line-height:1.1}
+.hero h1{font-size:clamp(28px,4.4vw,46px);margin:6px 0}
+.hero p{color:var(--muted);font-size:clamp(15px,1.9vw,19px);line-height:1.6;margin:4px 0;word-break:keep-all}
+
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:18px}
+.tool{display:flex;flex-direction:column;gap:6px;text-decoration:none;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-left:8px solid var(--c);border-radius:20px;padding:18px 20px;min-height:150px;transition:transform .15s}
+.tool:active{transform:scale(.98)}
+.tool .top{display:flex;align-items:center;gap:10px}
+.tool .ic{font-size:40px;line-height:1}
+.tool .tag{margin-left:auto;background:var(--c);color:#0b0f2b;font-weight:800;font-size:14px;border-radius:999px;padding:5px 12px;white-space:nowrap}
+.tool b{font-size:clamp(21px,2.4vw,26px);word-break:keep-all}
+.tool b small{font-size:14px;color:var(--muted);font-weight:700}
+.tool .d{color:var(--muted);line-height:1.55;word-break:keep-all}
+.c1{--c:var(--violet)}.c1 .tag{color:#fff}
+.c2{--c:var(--teal)}
+.c3{--c:var(--gold)}
+.c4{--c:var(--coral)}.c4 .tag{color:#fff}
+.info{margin-top:18px;background:#0c1030;border:1px dashed var(--line);border-radius:16px;padding:14px 18px;line-height:1.75;color:var(--muted);word-break:keep-all}
+footer{text-align:center;margin-top:18px;color:var(--muted);line-height:2}
+footer a,footer button{color:var(--teal);font:inherit;font-weight:700;background:none;border:0;text-decoration:underline;cursor:pointer;padding:6px}
+.qr{position:fixed;inset:0;background:rgba(3,5,18,.86);display:flex;align-items:center;justify-content:center;padding:16px;z-index:9}
+.qr[hidden]{display:none}
+.qrbox{background:#fff;color:#111;border-radius:22px;padding:22px;text-align:center;max-width:92vw}
+.qrbox img{width:min(70vmin,460px);height:auto;display:block;margin:0 auto;image-rendering:pixelated}
+.qrbox p{font-size:20px;font-weight:700;margin:12px 0}
+.qrbox button{font:inherit;font-weight:800;font-size:18px;border:0;border-radius:12px;background:var(--gold);padding:10px 24px;cursor:pointer}
+@media (max-width:700px){.grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<main class="wrap">
+  <header class="hero">
+    <div class="logo">🌌</div>
+    <h1>은하와 우주 실험실</h1>
+    <p>중학교 3학년 과학 · Ⅶ-2 은하와 우주<br>오늘 쓸 도구를 눌러 들어가세요.</p>
+  </header>
+  <nav class="grid">
+    <a class="tool c1" href="milkyway.html"><span class="top"><span class="ic">🌌</span><b>우리은하 탐험기</b><span class="tag">1차시</span></span><span class="d">위와 옆에서 본 우리은하, 은하수의 정체, 태양계 찾기 게임</span></a>
+    <a class="tool c2" href="https://stellarium-web.org/" target="_blank" rel="noopener"><span class="top"><span class="ic">🔭</span><b>스텔라리움 웹 <small>↗ 새 탭</small></b><span class="tag">1·2차시</span></span><span class="d">실제 밤하늘을 보는 관측 프로그램이에요. 수업 시간은 낮이라서 시각을 밤으로 바꾸거나 대기 아이콘을 꺼야 별이 보여요.</span></a>
+    <a class="tool c3" href="quiz.html"><span class="top"><span class="ic">✨</span><b>천체 감별 함께 퀴즈</b><span class="tag">3차시</span></span><span class="d">성단, 성운, 외부 은하 구별하기. ‘혼자 풀기’로 내 속도에 맞춰 연습해요.</span></a>
+    <a class="tool c4" href="expand.html"><span class="top"><span class="ic">🎈</span><b>우주 팽창 시뮬레이터</b><span class="tag">4·5차시</span></span><span class="d">가상 풍선 실험, 은하 사이 거리 재기, 기준 은하 바꾸기</span></a>
+  </nav>
+  <section class="info">
+    🔒 이 사이트는 이름이나 답 같은 학생 정보를 모으지 않아요. 결과는 내 화면에서만 보여요.<br>
+    📶 인터넷이 잘 안 되면 선생님 화면을 함께 봐요.
+  </section>
+  <footer><a href="credits.html">📷 사진 출처와 안내</a> · <button type="button" id="qrBtn">QR 크게 보기</button></footer>
+</main>
+<div class="qr" id="qr" hidden><div class="qrbox"><img src="qr.png" alt="이 사이트로 들어오는 QR 코드" width="290" height="290"><p>태블릿 카메라로 QR을 찍어 들어오세요.</p><button type="button" id="qrClose">닫기</button></div></div>
+<script>
+"use strict";
+const qr = document.getElementById('qr');
+document.getElementById('qrBtn').addEventListener('click', () => { qr.hidden = false; });
+document.getElementById('qrClose').addEventListener('click', () => { qr.hidden = true; });
+qr.addEventListener('click', (e) => { if (e.target === qr) qr.hidden = true; });
+</script>
+</body>
+</html>
