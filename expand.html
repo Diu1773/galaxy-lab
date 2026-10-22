@@ -59,10 +59,10 @@ label.chk{display:flex;align-items:center;gap:6px;font-size:14px;color:var(--mut
   </div>
   <aside>
     <h2>가상 풍선 실험 (4차시)</h2>
-    <div class="mission">① ⟲ 처음으로 → ② 📏 거리 재기에서 <b>우리은하와 다른 은하</b>를 차례로 눌러 4쌍 고르기 (가까운 은하, 먼 은하, 더 먼 은하 등) → ③ 🎈 1.5배로 키우기 → ④ 아래 결과를 활동지에 옮겨 적기</div>
+    <div class="mission">① ⟲ 처음으로 → ② 📏 거리 재기에서 <b>두 은하</b>를 차례로 눌러 4쌍 고르기 (가까운 두 은하, 먼 두 은하 등) → ③ 🎈 1.5배로 키우기 → ④ 아래 결과를 활동지에 옮겨 적기</div>
     <div id="measList"></div>
     <h2>관찰 미션</h2>
-    <div class="mission"><b>미션 1</b> ▶ 팽창을 눌러 보세요. 기준 은하(우리은하)에서 보면 다른 은하들은 어떻게 움직이나요?</div>
+    <div class="mission"><b>미션 1</b> ▶ 팽창을 눌러 보세요. 기준 은하에서 보면 다른 은하들은 어떻게 움직이나요?</div>
     <div class="mission"><b>미션 2</b> 📏 거리 재기로 가까운 은하 하나, 먼 은하 하나까지의 거리를 재 보세요. 어느 쪽이 더 많이 멀어지나요?</div>
     <div class="mission"><b>미션 3</b> 👆 다른 은하를 눌러 기준 은하로 바꾸고 다시 팽창해 보세요. 우주의 중심이 따로 있을까요?</div>
     <div class="mission"><b>미션 4</b> ◀ 되감기를 계속 눌러 보세요. 과거의 우주는 어땠을까요?</div>
@@ -182,7 +182,7 @@ function draw() {
     ctx.drawImage(g.img, p[0] - s / 2, p[1] - s / 2, s, s);
     if (i === refIdx) {
       ctx.strokeStyle = '#f4b942'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(p[0], p[1], s * 0.62, 0, Math.PI * 2); ctx.stroke();
-      label('우리은하 (기준)', p[0], p[1] + s * 0.62 + 14, 15, '#f4b942');
+      label('기준 은하', p[0], p[1] + s * 0.62 + 14, 15, '#f4b942');
     }
     if (st.pick === i) { ctx.strokeStyle = '#2cb1bc'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(p[0], p[1], s * 0.62, 0, Math.PI * 2); ctx.stroke(); }
   });
@@ -197,7 +197,7 @@ function renderMeas() {
   el.innerHTML = '<h2 style="margin-top:12px">거리 재기 결과</h2>' + st.meas.map((m, i) => {
     const d = Math.hypot(gals[m[0]].x - gals[m[1]].x, gals[m[0]].y - gals[m[1]].y);
     const d0 = d * st.snapA, d1 = d * st.a;
-    const who = (k) => (k === refIdx ? '우리은하' : '은하');
+    const who = (k) => (k === refIdx ? '기준 은하' : '은하');
     return `<div class="meas" style="color:${COLORS[i]}">${NUM[i]} ${who(m[0])}–${who(m[1])}: 처음 ${fmt(d0)} → 나중 ${fmt(d1)}<br>&nbsp;&nbsp;&nbsp;늘어난 거리 <b>${d1 >= d0 ? '+' : ''}${((d1 - d0) * UNIT).toFixed(1)}억 광년</b></div>`;
   }).join('') + '<div class="note">처음 = ▶ 팽창, ◀ 되감기, 🎈 1.5배로 키우기를 누른 순간 · 거리는 모형 속 값이에요.</div>';
 }
@@ -246,7 +246,7 @@ stage.addEventListener('pointerdown', (e) => {
   if (i < 0) return;
   if (st.mode === 'ref') {
     refIdx = i; st.meas = []; panTo(i);
-    toast('이제 이 은하가 기준(우리은하)이에요. ▶ 팽창을 눌러 보세요!');
+    toast('이제 이 은하가 기준 은하예요. ▶ 팽창을 눌러 보세요!');
   } else {
     if (st.pick === null) { st.pick = i; toast('두 번째 은하를 누르세요'); draw(); }
     else if (st.pick !== i) {
