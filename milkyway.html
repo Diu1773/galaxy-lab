@@ -240,7 +240,7 @@ function buildSky() {
 
 const cv = document.getElementById('cv'), stage = document.getElementById('stage'), panel = document.getElementById('panel');
 const ctx = cv.getContext('2d');
-const state = { view: 'top', labels: true, scale: true, dir: 0, guess: null, tries: 0, best: null, reveal: false, hist: [] };
+const state = { view: 'top', labels: true, scale: true, month: 7, lat: 37, guess: null, tries: 0, best: null, reveal: false, hist: [] };
 let galView = null;
 let cache = {}, sky = null, mini = null;
 
@@ -406,105 +406,184 @@ function drawGame(w, h, dpr) {
   }
 }
 
-function skyWindow(lc, halfL, dx, dy, dw, dh) {
-  const halfB = Math.min(BMAX, halfL * dh / dw);
-  const gx0 = (lc - halfL + 180) / 360 * GW, gw = 2 * halfL / 360 * GW;
-  const gy0 = (BMAX - halfB) / (2 * BMAX) * GH, gh = 2 * halfB / (2 * BMAX) * GH;
-  ctx.save(); ctx.beginPath(); ctx.rect(dx, dy, dw, dh); ctx.clip();
-  ctx.fillStyle = '#000'; ctx.fillRect(dx, dy, dw, dh);
-  ctx.imageSmoothingEnabled = true;
-  const part = (sx, sw, ox, ow) => ctx.drawImage(sky.canvas, sx, gy0, sw, gh, dx + ox, dy, ow, dh);
-  if (gx0 < 0) { const a = -gx0; part(GW - a, a, 0, dw * a / gw); part(0, gw - a, dw * a / gw, dw * (gw - a) / gw); }
-  else if (gx0 + gw > GW) { const a = GW - gx0; part(gx0, a, 0, dw * a / gw); part(0, gw - a, dw * a / gw, dw * (gw - a) / gw); }
-  else part(gx0, gw, 0, dw);
-  const sc = Math.max(0.55, Math.min(1, dw / 700));
-  for (const st of sky.stars) {
-    let dl = st.l - lc; if (dl > 180) dl -= 360; if (dl < -180) dl += 360;
-    if (Math.abs(dl) > halfL || Math.abs(st.b) > halfB) continue;
-    const x = dx + dw / 2 + dl / halfL * dw / 2, y = dy + dh / 2 - st.b / halfB * dh / 2;
-    ctx.beginPath(); ctx.arc(x, y, (0.5 + 1.8 * st.mag) * sc, 0, Math.PI * 2);
-    ctx.fillStyle = st.warm ? `rgba(255,225,180,${0.35 + 0.6 * st.mag})` : `rgba(220,230,255,${0.35 + 0.6 * st.mag})`; ctx.fill();
-  }
-  ctx.restore();
+const RAD = Math.PI / 180;
+const MID_DAY = [15, 46, 74, 105, 135, 166, 196, 227, 258, 288, 319, 349];
+const SEASONS = [['봄', 4], ['여름', 7], ['가을', 10], ['겨울', 1]];
+const GP = { a: 192.85948 * RAD, d: 27.12825 * RAD, l: 122.93192 * RAD };
+const VIEW_ALT = 32 * RAD, VIEW_AZ = Math.PI;
+function seasonOf(m) { return m >= 3 && m <= 5 ? '봄' : m >= 6 && m <= 8 ? '여름' : m >= 9 && m <= 11 ? '가을' : '겨울'; }
+function lstRad(m) { return (((6.7 + 0.0657 * MID_DAY[m - 1] + 21) % 24) * 15) * RAD; }
+function latRad() { return state.lat * RAD; }
+function horToEq(alt, az, lat) {
+  const dec = Math.asin(Math.sin(lat) * Math.sin(alt) + Math.cos(lat) * Math.cos(alt) * Math.cos(az));
+  const H = Math.atan2(-Math.cos(alt) * Math.sin(az), Math.cos(lat) * Math.sin(alt) - Math.sin(lat) * Math.cos(alt) * Math.cos(az));
+  return [H, dec];
+}
+function eqToGal(ra, dec) {
+  const b = Math.asin(Math.sin(dec) * Math.sin(GP.d) + Math.cos(dec) * Math.cos(GP.d) * Math.cos(ra - GP.a));
+  const l = GP.l - Math.atan2(Math.cos(dec) * Math.sin(ra - GP.a), Math.sin(dec) * Math.cos(GP.d) - Math.cos(dec) * Math.sin(GP.d) * Math.cos(ra - GP.a));
+  let ld = (l / RAD) % 360; if (ld > 180) ld -= 360; if (ld < -180) ld += 360;
+  return [-ld, b / RAD];
+}
+function eqToHor(ra, dec, lst, lat) {
+  const H = lst - ra;
+  const alt = Math.asin(Math.sin(lat) * Math.sin(dec) + Math.cos(lat) * Math.cos(dec) * Math.cos(H));
+  const az = Math.atan2(-Math.cos(dec) * Math.sin(H), Math.sin(dec) * Math.cos(lat) - Math.cos(dec) * Math.cos(H) * Math.sin(lat));
+  return [alt, (az + 2 * Math.PI) % (2 * Math.PI)];
+}
+function galToEq(simL, b) {
+  const l = -simL * RAD; b *= RAD;
+  const dec = Math.asin(Math.sin(b) * Math.sin(GP.d) + Math.cos(b) * Math.cos(GP.d) * Math.cos(GP.l - l));
+  const ra = GP.a + Math.atan2(Math.cos(b) * Math.sin(GP.l - l), Math.sin(b) * Math.cos(GP.d) - Math.cos(b) * Math.sin(GP.d) * Math.cos(GP.l - l));
+  return [ra, dec];
 }
 
+const PU = 2.05, PV0 = -0.62, PV1 = 1.25;
+function project(alt, az) {
+  const dl = az - VIEW_AZ;
+  const k = 2 / (1 + Math.sin(VIEW_ALT) * Math.sin(alt) + Math.cos(VIEW_ALT) * Math.cos(alt) * Math.cos(dl));
+  return [k * Math.cos(alt) * Math.sin(dl), k * (Math.cos(VIEW_ALT) * Math.sin(alt) - Math.sin(VIEW_ALT) * Math.cos(alt) * Math.cos(dl))];
+}
+function unproject(u, v) {
+  const r = Math.hypot(u, v);
+  if (r < 1e-9) return [VIEW_ALT, VIEW_AZ];
+  const c = 2 * Math.atan(r / 2);
+  const alt = Math.asin(Math.cos(c) * Math.sin(VIEW_ALT) + v * Math.sin(c) * Math.cos(VIEW_ALT) / r);
+  const az = VIEW_AZ + Math.atan2(u * Math.sin(c), r * Math.cos(VIEW_ALT) * Math.cos(c) - v * Math.sin(VIEW_ALT) * Math.sin(c));
+  return [alt, az];
+}
+let southCache = {}, bgStars = null;
+function sampleSky(l, b) {
+  if (Math.abs(b) >= BMAX - 0.5) return [0, 0, 0];
+  const fx = (l + 180) / 360 * GW - 0.5, fy = (BMAX - b) / (2 * BMAX) * GH - 0.5;
+  const x0 = Math.floor(fx), y0 = Math.max(0, Math.min(GH - 2, Math.floor(fy))), tx = fx - x0, ty = Math.max(0, Math.min(1, fy - y0));
+  const px = sky.px, out = [0, 0, 0];
+  for (const [dx, dy, wgt] of [[0, 0, (1 - tx) * (1 - ty)], [1, 0, tx * (1 - ty)], [0, 1, (1 - tx) * ty], [1, 1, tx * ty]]) {
+    const q = ((y0 + dy) * GW + ((x0 + dx) % GW + GW) % GW) * 4;
+    out[0] += px[q] * wgt; out[1] += px[q + 1] * wgt; out[2] += px[q + 2] * wgt;
+  }
+  return out;
+}
+function southImage(m, RW, RH) {
+  const key = m + ':' + state.lat + ':' + RW;
+  if (southCache[key]) return southCache[key];
+  if (!sky.px) sky.px = sky.canvas.getContext('2d').getImageData(0, 0, GW, GH).data;
+  const lst = lstRad(m), lat = latRad();
+  const off = document.createElement('canvas'); off.width = RW; off.height = RH;
+  const c2 = off.getContext('2d'), img = c2.createImageData(RW, RH), d = img.data;
+  for (let y = 0; y < RH; y++) {
+    const v = PV1 - (y + 0.5) / RH * (PV1 - PV0);
+    for (let x = 0; x < RW; x++) {
+      const u = -PU + (x + 0.5) / RW * 2 * PU;
+      const [alt, az] = unproject(u, v);
+      const p = (y * RW + x) * 4;
+      if (alt < 0) { d[p] = 0; d[p + 1] = 0; d[p + 2] = 0; d[p + 3] = 0; continue; }
+      const [H, dec] = horToEq(alt, az, lat);
+      const [l, b] = eqToGal(lst - H, dec);
+      const s = sampleSky(l, b);
+      const ext = 0.3 + 0.7 * Math.pow(Math.sin(Math.max(alt, 0.02)), 0.4);
+      const glow = Math.max(0, 1 - alt / (14 * RAD)) * 30;
+      d[p] = Math.min(255, s[0] * ext + glow * 0.45); d[p + 1] = Math.min(255, s[1] * ext + glow * 0.55); d[p + 2] = Math.min(255, s[2] * ext + glow); d[p + 3] = 255;
+    }
+  }
+  c2.putImageData(img, 0, 0);
+  southCache = { [key]: off };
+  return off;
+}
+function meridianL(m) {
+  const lst = lstRad(m), lat = latRad();
+  let best = null;
+  for (let a = 1; a <= 90; a += 1) {
+    const alt = a * RAD, az = Math.PI;
+    const [H, dec] = horToEq(alt, az, lat);
+    const [l, b] = eqToGal(lst - H, dec);
+    if (!best || Math.abs(b) < Math.abs(best[1])) best = [l, b];
+  }
+  return best;
+}
+function drawSouth(x, y, w, h, m, fs) {
+  const sc = Math.min(w / (2 * PU), h / (PV1 - PV0));
+  const vw = 2 * PU * sc, vh = (PV1 - PV0) * sc, ox = x + (w - vw) / 2, oy = y + (h - vh) / 2;
+  const toXY = (alt, az) => { const [u, v] = project(alt, az); return [ox + (u + PU) * sc, oy + (PV1 - v) * sc]; };
+  ctx.save(); ctx.beginPath(); ctx.rect(x, y, w, h); ctx.clip();
+  ctx.fillStyle = '#070b14'; ctx.fillRect(x, y, w, h);
+  ctx.imageSmoothingEnabled = true;
+  ctx.drawImage(southImage(m, Math.min(900, Math.round(vw)), Math.min(420, Math.round(vh))), ox, oy, vw, vh);
+  const lst = lstRad(m), lat = latRad();
+  if (!bgStars) {
+    const R = rng(4242); bgStars = [];
+    for (let k = 0; k < 1100; k++) { const u = R() * 2 - 1; bgStars.push({ ra: R() * 2 * Math.PI, dec: Math.asin(u), mag: Math.pow(R(), 3) }); }
+  }
+  const put = (alt, az, mag, warm) => {
+    if (alt <= 0) return;
+    const [sx, sy] = toXY(alt, az);
+    if (sx < x || sx > x + w || sy < y || sy > y + h) return;
+    ctx.beginPath(); ctx.arc(sx, sy, 0.5 + 1.6 * mag, 0, Math.PI * 2);
+    ctx.fillStyle = warm ? `rgba(255,225,180,${0.3 + 0.6 * mag})` : `rgba(220,230,255,${0.3 + 0.6 * mag})`; ctx.fill();
+  };
+  for (const s of bgStars) { const [alt, az] = eqToHor(s.ra, s.dec, lst, lat); put(alt, az, s.mag, false); }
+  for (const s of sky.stars) { const [ra, dec] = galToEq(s.l, s.b); const [alt, az] = eqToHor(ra, dec, lst, lat); put(alt, az, s.mag * 0.8, s.warm); }
+  ctx.strokeStyle = 'rgba(163,171,223,.28)'; ctx.lineWidth = 1; ctx.setLineDash([4, 6]);
+  [30, 60].forEach((a) => {
+    ctx.beginPath();
+    for (let k = 0; k <= 60; k++) { const [px, py] = toXY(a * RAD, (60 + k * 4) * RAD); k ? ctx.lineTo(px, py) : ctx.moveTo(px, py); }
+    ctx.stroke();
+    const [lx, ly] = toXY(a * RAD, Math.PI); txt(a + '°', lx, ly - fs * 0.6, fs - 3, '#8f97c9');
+  });
+  ctx.setLineDash([]);
+  ctx.beginPath();
+  for (let k = 0; k <= 90; k++) { const [px, py] = toXY(0, (45 + k * 3) * RAD); k ? ctx.lineTo(px, py) : ctx.moveTo(px, py); }
+  ctx.lineTo(x + w, y + h); ctx.lineTo(x, y + h); ctx.closePath();
+  ctx.fillStyle = '#121c30'; ctx.fill();
+  ctx.strokeStyle = 'rgba(201,208,255,.5)'; ctx.lineWidth = 1.5; ctx.stroke();
+  [['동', 90], ['남동', 135], ['남', 180], ['남서', 225], ['서', 270]].forEach(([t, a]) => {
+    const [px, py] = toXY(0, a * RAD);
+    if (px > x + fs && px < x + w - fs) txt(t, px, Math.min(y + h - fs, py + fs * 1.2), t === '남' ? fs + 2 : fs - 1, t === '남' ? '#ffe1a8' : '#c9d0ff');
+  });
+  ctx.restore();
+  ctx.lineWidth = 2; ctx.strokeStyle = 'rgba(163,171,223,.5)'; ctx.strokeRect(x + 1, y + 1, w - 2, h - 2);
+}
 function cone(sx, sy, lc, half, len, fill, stroke) {
   const a = -Math.PI / 2 + lc * Math.PI / 180, hw = half * Math.PI / 180;
   ctx.beginPath(); ctx.moveTo(sx, sy); ctx.arc(sx, sy, len, a - hw, a + hw); ctx.closePath();
   ctx.fillStyle = fill; ctx.fill();
   if (stroke) { ctx.lineWidth = 3; ctx.strokeStyle = stroke; ctx.stroke(); }
 }
-
-function drawMap(x, y, m, lc, fs) {
+function drawMap(x, y, m, month, fs) {
   ctx.save(); ctx.beginPath(); ctx.rect(x, y, m, m); ctx.clip();
   ctx.fillStyle = '#05071a'; ctx.fillRect(x, y, m, m);
   if (mini) ctx.drawImage(mini, x, y, m, m);
   const ms = m / 2 / 16500, cx = x + m / 2, cy = y + m / 2;
   const sx = cx + SUN.x * ms, sy = cy - SUN.y * ms, len = m * 0.9;
-  cone(sx, sy, 0, 30, len, 'rgba(244,185,66,.22)');
-  cone(sx, sy, 180, 30, len, 'rgba(44,177,188,.22)');
-  const isS = Math.abs(lc) < 25, isW = Math.abs(lc) > 155;
-  cone(sx, sy, lc, 30, len, isS ? 'rgba(244,185,66,.45)' : isW ? 'rgba(44,177,188,.45)' : 'rgba(255,255,255,.28)', '#fff');
+  const [lc, bc] = meridianL(month);
+  const al = Math.abs(lc);
+  cone(sx, sy, lc, 30, len, al < 60 ? 'rgba(244,185,66,.45)' : al > 120 ? 'rgba(44,177,188,.45)' : 'rgba(201,208,255,.32)', '#fff');
   ctx.restore();
   ctx.lineWidth = 2; ctx.strokeStyle = 'rgba(163,171,223,.5)'; ctx.strokeRect(x, y, m, m);
-  ctx.beginPath(); ctx.arc(cx, cy, 4, 0, Math.PI * 2); ctx.fillStyle = '#fff'; ctx.fill();
-  sunMarker(sx, sy, Math.max(4, m / 90));
-  if (state.labels) {
-    txt('은하 중심', cx + fs * 2.6, cy - fs * 0.2, fs - 1, '#fff');
-    txt('태양계 (지구)', sx + fs * 3.6, sy + fs * 0.1, fs - 1, '#ffd34d');
-    txt('☀️ 여름철 밤에 보는 쪽', cx, y + fs * 1.0, fs - 1, '#ffe1a8');
-    txt('❄️ 겨울철 밤에 보는 쪽', cx, y + m - fs * 1.0, fs - 1, '#9fe9ef');
+  ctx.beginPath(); ctx.arc(cx, cy, 3, 0, Math.PI * 2); ctx.fillStyle = '#fff'; ctx.fill();
+  sunMarker(sx, sy, Math.max(3, m / 80));
+  if (state.labels && m > 120) {
+    txt('은하 중심', cx + fs * 2.4, cy - fs * 0.2, fs - 2, '#fff');
+    txt('태양계', sx + fs * 2.2, sy + fs * 0.1, fs - 2, '#ffd34d');
   }
+  return [lc, bc];
 }
-
-function compPanel(lc, x, y, pw, ph, label, color, on, fs) {
-  skyWindow(lc, 60, x, y + fs * 1.5, pw, ph - fs * 1.5);
-  txt(label + ' · 밝기 ' + sky.brightness(lc), x + pw / 2, y + fs * 0.7, fs, color);
-  ctx.lineWidth = on ? 4 : 1.5; ctx.strokeStyle = on ? color : 'rgba(163,171,223,.45)';
-  ctx.strokeRect(x + 1, y + fs * 1.5, pw - 2, ph - fs * 1.5 - 1);
-}
-
 function drawSky(w, h) {
   if (!sky) { txt('계산하는 중…', w / 2, h / 2, 18); setTimeout(() => { sky = buildSky(); draw(); }, 30); return; }
   const fs = Math.max(12, Math.min(17, Math.min(w, h * 1.6) / 55));
-  const lc = state.dir, pad = 10, gap = 12;
-  const isS = Math.abs(lc) < 25, isW = Math.abs(lc) > 155;
-  const title = isS ? '여름철 밤 (은하 중심 방향, 궁수자리 쪽)' : (isW ? '겨울철 밤 (은하 바깥 방향, 마차부·오리온자리 쪽)' : `은하 중심에서 ${Math.abs(Math.round(lc))}° ${lc > 0 ? '오른쪽' : '왼쪽'}`);
-  let map, main, comp;
-  if (w >= h * 1.15) {
-    const m = Math.min(h - pad * 2 - fs * 1.6, w * 0.42);
-    map = { x: pad, y: pad + fs * 1.6, m };
-    const rx = pad + m + gap * 1.5, rw = w - rx - pad, top = pad + fs * 1.6;
-    const mh = (h - top - pad) * 0.52;
-    main = { x: rx, y: top, w: rw, h: mh };
-    comp = { x: rx, y: top + mh + gap, w: rw, h: h - top - mh - gap - pad, row: true };
-  } else {
-    const top = pad + fs * 1.6, mh = h * 0.30;
-    main = { x: pad, y: top, w: w - pad * 2, h: mh };
-    const by = top + mh + gap, bh = h - by - pad, m = Math.min(bh, (w - pad * 2) * 0.5);
-    map = { x: pad, y: by + fs * 1.6, m: m - fs * 1.6 };
-    comp = { x: pad + m + gap, y: by, w: w - pad * 2 - m - gap, h: bh, row: false };
-  }
-  txt('위에서 본 모습 — 지금 어디를 보고 있을까?', map.x + map.m / 2, map.y - fs * 0.8, fs, '#fff');
-  drawMap(map.x, map.y, map.m, lc, fs);
-  const below = h - (map.y + map.m) - pad;
-  if (below > fs * 3.2) {
-    const cy0 = map.y + map.m + Math.min(below / 2, fs * 2.2);
-    txt('부채꼴 = 지금 바라보는 방향', map.x + map.m / 2, cy0 - fs * 0.75, fs - 1, '#a3abdf');
-    txt('별이 많은 은하 중심 쪽을 볼수록 은하수가 밝아요', map.x + map.m / 2, cy0 + fs * 0.75, fs - 1, '#ffe1a8');
-  }
-  txt('지금 보는 하늘 — ' + title, main.x + main.w / 2, main.y - fs * 0.8, fs, '#fff');
-  skyWindow(lc, 60, main.x, main.y, main.w, main.h);
-  ctx.lineWidth = 3; ctx.strokeStyle = isS ? '#f4b942' : isW ? '#2cb1bc' : '#fff'; ctx.strokeRect(main.x + 1.5, main.y + 1.5, main.w - 3, main.h - 3);
-  if (comp.row) {
-    const pw = (comp.w - gap) / 2;
-    compPanel(0, comp.x, comp.y, pw, comp.h, '☀️ 여름철 밤', '#f4b942', isS, fs);
-    compPanel(180, comp.x + pw + gap, comp.y, pw, comp.h, '❄️ 겨울철 밤', '#2cb1bc', isW, fs);
-  } else {
-    const ph = (comp.h - gap) / 2;
-    compPanel(0, comp.x, comp.y, comp.w, ph, '☀️ 여름철 밤', '#f4b942', isS, fs);
-    compPanel(180, comp.x, comp.y + ph + gap, comp.w, ph, '❄️ 겨울철 밤', '#2cb1bc', isW, fs);
-  }
+  const mo = state.month, pad = 10, gap = 12, head = fs * 1.7;
+  const vh = Math.min(h * 0.66, (w - pad * 2) / (2 * PU) * (PV1 - PV0));
+  const view = { x: pad, y: pad + head, w: w - pad * 2, h: vh };
+  const latTxt = state.lat >= 0 ? `북위 ${state.lat}°` : `남위 ${-state.lat}°`;
+  txt(`${mo}월 밤 9시 · 남쪽 하늘 (${seasonOf(mo)}) · ${latTxt}${state.lat === 37 ? ' 우리나라' : ''}`, w / 2, pad + head * 0.45, fs + 1, '#fff');
+  drawSouth(view.x, view.y, view.w, view.h, mo, fs);
+  const top = view.y + view.h + gap, m = Math.max(70, h - top - pad);
+  const [lc] = drawMap(pad, top, m, mo, fs);
+  const al = Math.abs(lc), tx = pad + m + gap * 1.5, ty = top + m / 2;
+  ctx.textAlign = 'left';
+  const left = (s, yy, size, color) => { ctx.font = `700 ${size}px ${FONT}`; ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,.75)'; ctx.strokeText(s, tx, yy); ctx.fillStyle = color; ctx.fillText(s, tx, yy); };
+  left('위에서 본 우리은하 · 부채꼴 = 지금 남쪽 하늘에 보이는 은하수 쪽', ty - fs * 0.9, fs - 1, '#a3abdf');
+  left(al < 60 ? '→ 은하 중심 쪽 (별이 많아 밝고 넓어요)' : al > 120 ? '→ 은하 바깥쪽 (별이 적어 희미해요)' : '→ 원반을 따라 옆쪽', ty + fs * 0.9, fs, al < 60 ? '#ffe1a8' : al > 120 ? '#9fe9ef' : '#c9d0ff');
 }
 
 function draw() {
@@ -540,14 +619,15 @@ const TEXT = {
   <div class="row"><button class="btn" id="gNext">🙋 다음 사람 차례 (내 기록 새로)</button></div>`,
   sky: `<h2>은하수의 정체</h2>
   <p>우리는 원반 <b>안</b>에서 원반 방향을 바라보기 때문에, 수많은 별빛이 겹쳐 <b>띠</b>처럼 보여요. 이것이 <b>은하수</b>예요.</p>
-  <p>밤에는 태양 반대쪽 하늘을 봐요. <b>여름철 밤</b>에는 은하 <b>중심 쪽</b>, <b>겨울철 밤</b>에는 은하 <b>바깥쪽</b>을 보게 돼요. 왼쪽 그림의 부채꼴이 지금 보는 방향이에요.</p>
-  <div class="row"><button class="btn gold" id="bSummer">☀️ 여름철 밤</button><button class="btn teal" id="bWinter">❄️ 겨울철 밤</button></div>
-  <label>바라보는 방향 바꾸기</label>
-  <input type="range" id="dir" min="-180" max="180" step="1" value="0">
-  <p style="margin-bottom:0">이 방향 은하수 밝기 (은하 중심 방향 = 100)</p>
-  <div class="big" id="bval">100</div>
-  <div class="meter"><div id="bbar" style="width:100%"></div></div>
-  <div class="think"><b>생각해 보기</b><br>여름철 밤과 겨울철 밤의 밝기 숫자를 비교해 보세요. 여름철 은하수가 더 밝고 넓게 보이는 까닭은 무엇일까요?</div>`
+  <p>위 그림은 <b>밤 9시에 남쪽</b>을 바라본 하늘이에요. 달을 바꾸면 밤 9시에 떠 있는 하늘이 달라지고, <b>위도</b>를 바꾸면 은하수가 지평선과 이루는 기울기가 달라져요. 아래 그림의 부채꼴은 지금 남쪽 하늘에 보이는 은하수가 우리은하의 어느 쪽인지 알려 줘요.</p>
+  <div class="row" id="seasons">${SEASONS.map(([n, m]) => `<button class="btn" data-m="${m}">${n} (${m}월)</button>`).join('')}</div>
+  <label>달 바꾸기</label>
+  <input type="range" id="mon" min="1" max="12" step="1" value="7">
+  <div class="big" id="mval">7월</div>
+  <label>관측하는 곳의 위도 바꾸기</label>
+  <input type="range" id="lat" min="-60" max="90" step="1" value="37">
+  <div class="row" style="align-items:center"><div class="big" id="lval">북위 37°</div><button class="btn" id="latKr">우리나라로</button></div>
+  <div class="think"><b>생각해 보기</b><br>여름철과 겨울철의 은하수를 비교해 보세요. 여름철 은하수가 더 밝고 넓게 보이는 까닭은 무엇일까요?</div>`
 };
 
 function setPanel() {
@@ -566,15 +646,20 @@ function setPanel() {
     document.getElementById('gNext').onclick = () => { state.hist = []; state.tries = 0; state.best = null; state.guess = null; state.reveal = false; showResult(); draw(); };
   }
   if (state.view === 'sky') {
-    const dir = document.getElementById('dir');
+    const mon = document.getElementById('mon');
     const upd = () => {
-      dir.value = state.dir;
-      if (sky) { const v = sky.brightness(state.dir); document.getElementById('bval').textContent = v; document.getElementById('bbar').style.width = Math.min(100, v) + '%'; }
+      mon.value = state.month;
+      document.getElementById('mval').textContent = state.month + '월 (' + seasonOf(state.month) + ')';
+      document.querySelectorAll('#seasons .btn').forEach((b) => b.classList.toggle('gold', +b.dataset.m === state.month));
+      lat.value = state.lat;
+      document.getElementById('lval').textContent = state.lat >= 0 ? '북위 ' + state.lat + '°' : '남위 ' + (-state.lat) + '°';
       draw();
     };
-    dir.oninput = () => { state.dir = +dir.value; upd(); };
-    document.getElementById('bSummer').onclick = () => { state.dir = 0; upd(); };
-    document.getElementById('bWinter').onclick = () => { state.dir = 180; upd(); };
+    const lat = document.getElementById('lat');
+    lat.oninput = () => { state.lat = +lat.value; upd(); };
+    document.getElementById('latKr').onclick = () => { state.lat = 37; upd(); };
+    mon.oninput = () => { state.month = +mon.value; upd(); };
+    document.querySelectorAll('#seasons .btn').forEach((b) => { b.onclick = () => { state.month = +b.dataset.m; upd(); }; });
     if (!sky) setTimeout(() => { sky = buildSky(); upd(); }, 40); else upd();
   }
 }
@@ -625,7 +710,8 @@ if (['top', 'side', 'sky', 'game'].includes(hv[0])) {
   state.view = hv[0];
   document.querySelectorAll('#tabs button').forEach((x) => x.classList.toggle('on', x.dataset.v === state.view));
 }
-if (hv[1] && !isNaN(+hv[1])) state.dir = +hv[1];
+if (hv[1] && !isNaN(+hv[1])) { const v = +hv[1]; state.month = v >= 1 && v <= 12 ? v : (Math.abs(v) > 90 ? 1 : 7); }
+if (hv[2] && !isNaN(+hv[2])) state.lat = Math.max(-60, Math.min(90, Math.round(+hv[2])));
 if (hv[0] === 'game' && hv[1] && hv[1].includes(',')) {
   hv[1].split(';').forEach((p) => { const q = p.split(',').map(Number); state.guess = { x: q[0], y: q[1] }; state.hist.push(judge(state.guess).err); });
   state.tries = state.hist.length; state.best = Math.min(...state.hist); state.reveal = hv[2] === 'r';
