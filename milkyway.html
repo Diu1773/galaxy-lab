@@ -163,13 +163,14 @@ function renderProjection(gal, W, H, scale, proj, gain) {
 }
 
 const GW = 720, GH = 200, BMAX = 50, LOCAL = 0.16;
-function buildSky() {
+function buildSky(center) {
+  const O = center ? { x: 0, y: 0, z: 15 } : SUN;
   const gal = makeGalaxy({ bulge: 34000, bar: 22000, arm: 70000, disk: 52000, halo: 1500 }, 7);
   const I = new Float32Array(GW * GH), Wm = new Float32Array(GW * GH);
   for (let i = 0; i < gal.n; i++) {
-    const dx = gal.X[i] - SUN.x, dy = gal.Y[i] - SUN.y, dz = gal.Z[i] - SUN.z;
+    const dx = gal.X[i] - O.x, dy = gal.Y[i] - O.y, dz = gal.Z[i] - O.z;
     const d2 = (dx * dx + dy * dy + dz * dz) / 1e6;
-    if (d2 < 1.0) continue;
+    if (d2 < (center ? 0.3 : 1.0)) continue;
     const lum = 1 / d2;
     const l = Math.atan2(dx, dy) * 180 / Math.PI;
     const b = Math.atan2(dz, Math.hypot(dx, dy)) * 180 / Math.PI;
@@ -184,11 +185,12 @@ function buildSky() {
     const b = BMAX - (gy + 0.5) / GH * 2 * BMAX;
     for (let gx = 0; gx < GW; gx++) {
       const l = (gx + 0.5) / GW * 360 - 180;
-      const dust = 1 - 0.62 * Math.exp(-((b / 1.5) ** 2)) * Math.exp(-((l / 75) ** 2));
+      const dust = 1 - 0.62 * Math.exp(-((b / 1.5) ** 2)) * (center ? 0.6 : Math.exp(-((l / 75) ** 2)));
       I[gy * GW + gx] *= dust; Wm[gy * GW + gx] *= dust;
     }
   }
   boxBlur(I, GW, GH, 2); boxBlur(I, GW, GH, 2); boxBlur(Wm, GW, GH, 2); boxBlur(Wm, GW, GH, 2);
+  if (center) { boxBlur(I, GW, GH, 5); boxBlur(I, GW, GH, 5); boxBlur(Wm, GW, GH, 5); boxBlur(Wm, GW, GH, 5); }
 
   let peak = 0;
   for (let gx = GW / 2 - 20; gx < GW / 2 + 20; gx++) peak = Math.max(peak, I[(GH / 2) * GW + gx]);
@@ -202,7 +204,7 @@ function buildSky() {
   }
   const sorted = Array.from(I).sort((a, b) => a - b);
   const ref = sorted[Math.floor(sorted.length * 0.995)];
-  const gain = 2.6 / ref;
+  const gain = (center ? 1.4 : 2.6) / ref;
   const off = document.createElement('canvas'); off.width = GW; off.height = GH;
   const ctx = off.getContext('2d'); const img = ctx.createImageData(GW, GH);
   for (let p = 0; p < GW * GH; p++) {
@@ -453,6 +455,14 @@ function unproject(u, v) {
   return [alt, az];
 }
 const southCache = new Map(), previewCache = new Map(), rayCache = new Map();
+const skies = {};
+function useSky() {
+  const mode = state.center ? 'center' : 'sun';
+  if (sky !== skies[mode]) {
+    sky = skies[mode] || null;
+    southCache.clear(); previewCache.clear(); starCache.clear(); bgStars = null;
+  }
+}
 const starCache = new Map(), meridianCache = new Map();
 let bgStars = null, southGrid = null, skyPreview = false;
 let skyFrame = 0, skyTimer = 0, skyBuildTimer = 0;
@@ -462,7 +472,26 @@ function requestSkyDraw(preview) {
   skyFrame = requestAnimationFrame(() => { skyFrame = 0; if (state.view === 'sky') draw(); });
 }
 function sampleSky(l, b) {
-  if (Math.abs(b) >= BMAX - 0.5) return [0, 0, 0];
+
+  if (Math.abs(b) >= BMAX - 0.5 && !state.center) return [0, 0, 0];
+  if (state.center && Math.abs(b) > BMAX - 10) {
+
+    const sg = Math.sign(b) || 1;
+    if (!sky.edge) sky.edge = {};
+    if (!sky.edge[sg]) {
+      const e = [0, 0, 0];
+      for (let k = 0; k < 72; k++) { const c = sampleBand(k * 5 - 177.5, sg * (BMAX - 1.5)); e[0] += c[0] / 72; e[1] += c[1] / 72; e[2] += c[2] / 72; }
+      sky.edge[sg] = e;
+    }
+    const e = sky.edge[sg];
+    const t = Math.min(1, (Math.abs(b) - (BMAX - 10)) / 9);
+    const c = sampleBand(l, sg * Math.min(Math.abs(b), BMAX - 1.5));
+    const f = 1 - 0.1 * t;
+    return [(c[0] * (1 - t) + e[0] * t) * f, (c[1] * (1 - t) + e[1] * t) * f, (c[2] * (1 - t) + e[2] * t) * f];
+  }
+  return sampleBand(l, b);
+}
+function sampleBand(l, b) {
   const fx = (l + 180) / 360 * GW - 0.5, fy = (BMAX - b) / (2 * BMAX) * GH - 0.5;
   const x0 = Math.floor(fx), y0 = Math.max(0, Math.min(GH - 2, Math.floor(fy))), tx = fx - x0, ty = Math.max(0, Math.min(1, fy - y0));
   const px = sky.px, out = [0, 0, 0];
@@ -599,24 +628,25 @@ function drawMap(x, y, m, month, fs) {
   ctx.fillStyle = '#05071a'; ctx.fillRect(x, y, m, m);
   if (mini) ctx.drawImage(mini, x, y, m, m);
   const ms = m / 2 / 16500, cx = x + m / 2, cy = y + m / 2;
-  const sx = cx + SUN.x * ms, sy = cy - SUN.y * ms, len = m * 0.9;
+  const sx = state.center ? cx : cx + SUN.x * ms, sy = state.center ? cy : cy - SUN.y * ms, len = m * 0.9;
   const [lc, bc] = meridianL(month);
   const al = Math.abs(lc);
-  cone(sx, sy, lc, 30, len, al < 60 ? 'rgba(244,185,66,.45)' : al > 120 ? 'rgba(44,177,188,.45)' : 'rgba(201,208,255,.32)', '#fff');
+  if (!state.center) cone(sx, sy, lc, 30, len, al < 60 ? 'rgba(244,185,66,.45)' : al > 120 ? 'rgba(44,177,188,.45)' : 'rgba(201,208,255,.32)', '#fff');
   ctx.restore();
   ctx.lineWidth = 2; ctx.strokeStyle = 'rgba(163,171,223,.5)'; ctx.strokeRect(x, y, m, m);
   ctx.beginPath(); ctx.arc(cx, cy, 3, 0, Math.PI * 2); ctx.fillStyle = '#fff'; ctx.fill();
   sunMarker(sx, sy, Math.max(3, m / 80));
   if (state.labels && m > 120) {
-    txt('은하 중심', cx + fs * 2.4, cy - fs * 0.2, fs - 2, '#fff');
-    txt('태양계', sx + fs * 2.2, sy + fs * 0.1, fs - 2, '#ffd34d');
+    if (!state.center) txt('은하 중심', cx + fs * 2.4, cy - fs * 0.2, fs - 2, '#fff');
+    txt(state.center ? '태양계(만약)' : '태양계', sx + fs * 2.9, sy + fs * 0.1, fs - 2, '#ffd34d');
   }
   return [lc, bc];
 }
 function drawSky(w, h) {
+  useSky();
   if (!sky) {
     txt('계산하는 중…', w / 2, h / 2, 18);
-    if (!skyBuildTimer) skyBuildTimer = setTimeout(() => { skyBuildTimer = 0; sky = buildSky(); requestSkyDraw(); }, 30);
+    if (!skyBuildTimer) skyBuildTimer = setTimeout(() => { skyBuildTimer = 0; const mode = state.center ? 'center' : 'sun'; skies[mode] = buildSky(state.center); useSky(); requestSkyDraw(); }, 30);
     return;
   }
   const fs = Math.max(12, Math.min(17, Math.min(w, h * 1.6) / 55));
@@ -624,13 +654,18 @@ function drawSky(w, h) {
   const vh = Math.min(h * 0.66, (w - pad * 2) / (2 * PU) * (PV1 - PV0));
   const view = { x: pad, y: pad + head, w: w - pad * 2, h: vh };
   const latTxt = state.lat === 0 ? '적도' : state.lat > 0 ? `북위 ${state.lat}°` : `남위 ${-state.lat}°`;
-  txt(`${mo}월 밤 9시 · 남쪽 하늘 (${seasonOf(mo)}) · ${latTxt}${state.lat === 37 ? ' (우리나라)' : ''}`, w / 2, pad + head * 0.45, fs + 1, '#fff');
+  txt(state.center ? '만약 태양계가 우리은하 중심부에 있다면? · 남쪽 하늘' : `${mo}월 밤 9시 · 남쪽 하늘 (${seasonOf(mo)}) · ${latTxt}${state.lat === 37 ? ' (우리나라)' : ''}`, w / 2, pad + head * 0.45, fs + 1, state.center ? '#ffd34d' : '#fff');
   drawSouth(view.x, view.y, view.w, view.h, mo, fs);
   const top = view.y + view.h + gap, m = Math.max(70, h - top - pad);
   const [lc] = drawMap(pad, top, m, mo, fs);
   const al = Math.abs(lc), tx = pad + m + gap * 1.5, ty = top + m / 2;
   ctx.textAlign = 'left';
   const left = (s, yy, size, color) => { ctx.font = `700 ${size}px ${FONT}`; ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,.75)'; ctx.strokeText(s, tx, yy); ctx.fillStyle = color; ctx.fillText(s, tx, yy); };
+  if (state.center) {
+    left('태양계를 은하 중심부로 옮겨 본 모습이에요 (실제 위치가 아니에요)', ty - fs * 0.9, fs - 1, '#a3abdf');
+    left('→ 하늘 전체에 별이 가득하고, 원반 쪽은 띠처럼 조금 더 밝아요', ty + fs * 0.9, fs, '#ffe1a8');
+    return;
+  }
   left('위에서 본 우리은하 · 부채꼴 = 지금 남쪽 하늘에 보이는 은하수 쪽', ty - fs * 0.9, fs - 1, '#a3abdf');
   left(al < 60 ? '→ 은하 중심 쪽 (별이 많아 밝고 넓어요)' : al > 120 ? '→ 은하 바깥쪽 (별이 적어 희미해요)' : '→ 원반을 따라 옆쪽', ty + fs * 0.9, fs, al < 60 ? '#ffe1a8' : al > 120 ? '#9fe9ef' : '#c9d0ff');
 }
@@ -693,7 +728,9 @@ const TEXT = {
   <datalist id="latTicks"><option value="-60"></option><option value="0"></option><option value="37"></option><option value="90"></option></datalist>
   <div class="sky-ticks lat" aria-hidden="true"><span style="left:0">남위<br>60°</span><span style="left:40%">적도<br>0°</span><span style="left:64.67%">우리나라<br>37°</span><span style="left:100%">북극<br>90°</span></div>
   <div class="row" style="align-items:center"><output class="big" id="lval" for="lat">북위 37° (우리나라)</output><button class="btn" id="latKr">우리나라로</button></div>
-  <div class="think"><b>생각해 보기</b><br>여름철과 겨울철의 은하수를 비교해 보세요. 여름철 은하수가 더 밝고 넓게 보이는 까닭은 무엇일까요?</div>`
+  <div class="sky-label" id="posLabel">태양계 위치</div>
+  <div class="row" id="pos" role="group" aria-labelledby="posLabel"><button class="btn" data-c="0">지금 위치 (나선팔)</button><button class="btn" data-c="1">만약 은하 중심부라면?</button></div>
+  <div class="think"><b>생각해 보기</b><br>여름철과 겨울철의 은하수를 비교해 보세요. 여름철 은하수가 더 밝고 넓게 보이는 까닭은 무엇일까요?<br>태양계가 우리은하의 중심부에 있다면 은하수는 어떻게 보일까요?</div>`
 };
 
 function setPanel() {
@@ -724,6 +761,7 @@ function setPanel() {
       lat.value = state.lat;
       const latText = state.lat === 0 ? '적도' : state.lat > 0 ? '북위 ' + state.lat + '°' + (state.lat === 37 ? ' (우리나라)' : '') : '남위 ' + (-state.lat) + '°';
       document.getElementById('lval').textContent = latText; lat.setAttribute('aria-valuetext', latText);
+      document.querySelectorAll('#pos .btn').forEach((b) => b.classList.toggle('gold', (b.dataset.c === '1') === !!state.center));
       clearTimeout(skyTimer); skyPreview = preview;
       if (redraw) requestSkyDraw();
       if (preview) skyTimer = setTimeout(() => requestSkyDraw(false), 150);
@@ -732,6 +770,7 @@ function setPanel() {
     document.getElementById('latKr').onclick = () => { state.lat = 37; upd(); };
     mon.oninput = () => { state.month = +mon.value; upd(true); };
     document.querySelectorAll('#seasons .btn').forEach((b) => { b.onclick = () => { state.month = +b.dataset.m; upd(); }; });
+    document.querySelectorAll('#pos .btn').forEach((b) => { b.onclick = () => { state.center = b.dataset.c === '1'; upd(); }; });
     upd(false, false);
   }
 }
@@ -784,6 +823,7 @@ if (['top', 'side', 'sky', 'game'].includes(hv[0])) {
 }
 if (hv[1] && !isNaN(+hv[1])) { const v = +hv[1]; state.month = v >= 1 && v <= 12 ? v : (Math.abs(v) > 90 ? 1 : 7); }
 if (hv[2] && !isNaN(+hv[2])) state.lat = Math.max(-60, Math.min(90, Math.round(+hv[2])));
+if (hv[3] === 'c') state.center = true;
 if (hv[0] === 'game' && hv[1] && hv[1].includes(',')) {
   hv[1].split(';').forEach((p) => { const q = p.split(',').map(Number); state.guess = { x: q[0], y: q[1] }; state.hist.push(judge(state.guess).err); });
   state.tries = state.hist.length; state.best = Math.min(...state.hist); state.reveal = hv[2] === 'r';
