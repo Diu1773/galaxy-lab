@@ -6,6 +6,7 @@
 |---|---|
 | `index.html` | 첫 화면 |
 | `milkyway.html` | 우리은하 탐험기 (1차시) |
+| `nebula.html` | 성운 시뮬레이터 (3차시) |
 | `quiz.html` | 천체 감별 함께 퀴즈 (3차시) |
 | `expand.html` | 우주 팽창 시뮬레이터 (4·5차시) |
 | `credits.html` | 사진 출처와 안내 |
