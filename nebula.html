@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="robots" content="noindex">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>성운 시뮬레이터</title>
+<style>
+:root{--bg:#070a1f;--panel:#11163a;--panel2:#1a2050;--ink:#eef0ff;--muted:#a3abdf;--gold:#f4b942;--violet:#8e6bff;--teal:#2cb1bc;--red:#ff5d73;--blue:#7fb2ff}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:"Malgun Gothic","Apple SD Gothic Neo","Noto Sans KR",sans-serif;-webkit-tap-highlight-color:transparent}
+header{display:flex;align-items:center;gap:14px;padding:10px 16px;flex-wrap:wrap}
+h1{font-size:20px;margin:0;white-space:nowrap}
+.tabs{display:flex;gap:8px;flex-wrap:wrap}
+.tabs button,.btn{border:0;border-radius:999px;padding:10px 16px;font:inherit;font-size:15px;font-weight:700;color:var(--ink);background:var(--panel2);cursor:pointer}
+.tabs button.on{background:var(--violet)}
+.btn{display:block;width:100%;text-align:left;border-radius:12px;margin:8px 0}
+.btn.on{background:var(--teal);color:#021d20}
+.btn:disabled{opacity:.45;cursor:default}
+main{display:grid;grid-template-columns:1fr 340px;gap:12px;padding:0 16px 16px;height:calc(100% - 62px)}
+@media (max-width:900px){main{grid-template-columns:1fr;height:auto}.stage{height:62vh}}
+.stage{position:relative;background:#000;border-radius:14px;overflow:hidden;min-height:380px;touch-action:none}
+.stage canvas{position:absolute;inset:0;width:100%;height:100%}
+.inset{position:absolute;right:12px;bottom:12px;width:36%;aspect-ratio:4/3;border:2px solid var(--gold);border-radius:12px;overflow:hidden;background:#000}
+.inset canvas{position:absolute;inset:0;width:100%;height:100%}
+.inset .tag{position:absolute;left:0;top:0;right:0;padding:5px 10px;font-size:14px;font-weight:800;background:rgba(7,10,31,.75);color:var(--gold)}
+.inset .wait{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:44px;font-weight:800;color:var(--muted);background:#05071a}
+.hint{position:absolute;left:12px;top:10px;font-size:13px;color:var(--muted);pointer-events:none}
+.reset{position:absolute;left:12px;bottom:12px;border:0;border-radius:999px;padding:7px 12px;font:inherit;font-size:13px;font-weight:700;color:var(--ink);background:rgba(26,32,80,.85);cursor:pointer}
+aside{background:var(--panel);border-radius:14px;padding:16px;overflow:auto;line-height:1.6;font-size:15px}
+aside h2{font-size:17px;margin:0 0 8px;color:var(--gold)}
+.q{background:var(--panel2);border-radius:10px;padding:10px 12px;margin:10px 0}
+.q b{color:var(--teal)}
+.opts{display:grid;gap:6px;margin-top:8px}
+.opts div{background:#0b0f2b;border-radius:8px;padding:6px 10px}
+.name{display:none;margin-top:10px;border-left:4px solid var(--gold);padding:6px 10px;background:#0b0f2b;border-radius:6px}
+.name.show{display:block}
+.name .big{font-size:22px;font-weight:800}
+.note{font-size:12px;color:var(--muted);margin-top:14px}
+.legend{font-size:13px;color:var(--muted);margin-top:6px}
+body{display:flex;flex-direction:column;min-height:100svh}
+main{flex:1;min-height:0;height:auto;grid-template-columns:minmax(0,1fr) 340px}
+button,select,input{font:inherit}
+button:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
+button{touch-action:manipulation}
+[hidden]{display:none!important}
+.explore{grid-template-columns:minmax(0,1fr) 370px}
+.explore aside{display:flex;flex-direction:column;padding:12px;overflow:hidden}
+.eye-screen{position:relative;flex:none;border:2px solid var(--gold);border-radius:12px;overflow:hidden;background:#000}
+.eye-screen h2{font-size:15px;padding:7px 10px;margin:0;background:#1a1830}
+.eye-screen canvas{display:block;width:100%;height:200px;touch-action:pan-y}
+.eye-caption{font-size:12px;color:var(--muted);margin:5px 0}
+.free-controls{overflow:auto;min-height:0;padding:0 3px 8px;scrollbar-width:thin}
+.free-controls .btn{font-size:14px;padding:10px 12px;margin:6px 0;min-height:44px}
+.free-controls p{margin:6px 0}
+.free-controls select{max-width:100%;width:100%;min-height:44px;color:var(--ink);background:#080d29;border:1px solid #485385;border-radius:8px;padding:7px}
+.free-controls label{font-size:13px}
+.free-controls input[type=range]{width:100%;min-height:30px;accent-color:var(--teal);touch-action:pan-y}
+.free-controls input[type=checkbox]{width:20px;height:20px;vertical-align:middle;accent-color:var(--teal)}
+.axis-control{display:grid;grid-template-columns:58px 1fr 36px;align-items:center;gap:6px}
+.axis-control output{font-size:12px;text-align:right;color:var(--muted)}
+.free-row{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.free-row>*{flex:1;min-width:0}
+.free-row label{flex:initial}
+.free-controls details{border-top:1px solid #303862;margin-top:8px;padding-top:8px}
+.free-controls summary{cursor:pointer;min-height:40px;display:list-item;font-weight:700;color:var(--gold)}
+.free-tools{position:absolute;left:12px;right:12px;bottom:12px;display:flex;flex-wrap:wrap;gap:7px;align-items:center}
+.free-tools button{border:1px solid #535e94;background:rgba(17,22,58,.96);border-radius:12px;color:var(--ink);padding:10px 13px;min-height:46px;font-weight:700;cursor:pointer}
+.free-tools button.active{background:var(--teal);color:#031c20;border-color:var(--teal)}
+.free-tools .zoom{margin-left:auto;display:flex;gap:5px}
+.free-tools .zoom button{font-size:19px;min-width:46px}
+.free-help{position:absolute;left:14px;right:14px;top:12px;pointer-events:none;font-size:13px;color:#c9d0f9;line-height:1.7}
+.free-help b{color:var(--gold);font-size:17px}
+.free-help span{display:block}
+.free-message{position:absolute;left:14px;right:14px;bottom:132px;pointer-events:none;color:var(--gold);font-size:14px;text-align:center;text-shadow:0 1px 5px #000}
+.free-answer{padding:10px;background:#090e2b;border-radius:8px;font-size:13px;margin:6px 0}
+.free-answer b{color:var(--gold)}
+.challenge-result{color:#7be3c6;font-weight:700;font-size:14px;min-height:24px;margin-top:6px}
+.free-controls .note{margin-top:10px;line-height:1.5}
+.scene-picker{display:grid;grid-template-columns:minmax(0,1fr) 80px;gap:6px;align-items:center;margin:8px 0}
+.scene-picker button{border:0;border-radius:8px;min-height:44px;background:#2a3060;color:var(--ink);cursor:pointer;font-weight:700}
+@media(min-width:901px){body{height:100svh}header{flex:none}.explore .stage{min-height:0}}
+@media(max-width:1100px) and (min-width:901px){h1{font-size:17px}.tabs{gap:5px}.tabs button{padding:10px;font-size:13px}.explore{grid-template-columns:minmax(0,1fr) 330px}}
+@media(max-width:900px){body{height:auto}main,.explore{grid-template-columns:minmax(0,1fr)}header{padding:10px}.tabs{gap:5px}.tabs button{font-size:13px;padding:10px 12px}main{padding:0 10px 12px}.stage{height:58svh;min-height:370px}.explore aside{overflow:visible}.free-controls{overflow:visible}.eye-screen canvas{height:240px}.free-tools{gap:5px}.free-tools button{font-size:12px;padding:9px}.free-tools .zoom button{font-size:17px}.free-help{font-size:12px}.free-help b{font-size:15px}}
+.sitehome{margin-left:auto;color:#eef0ff;text-decoration:none;font-weight:700;font-size:14px;padding:9px 14px;border-radius:999px;background:#1a2050;white-space:nowrap}
+@media (min-width:901px){body{display:flex;flex-direction:column}main{flex:1;min-height:0;height:auto}}
+</style>
+</head>
+<body>
+<header>
+  <h1>🌫️ 성운은 어떻게 보일까?</h1>
+  <div class="tabs" id="tabs">
+    <button data-c="0" class="on">① 별이 구름 안에</button>
+    <button data-c="1">② 별이 구름 옆에</button>
+    <button data-c="2">③ 별들이 구름 뒤에</button>
+    <button data-c="3">④ 세 가지 비교</button>
+    <button data-c="4">⑤ 자유 탐구</button>
+  </div>
+<a class="sitehome" href="./">⌂ 첫 화면</a>
+</header>
+<main>
+  <div class="stage" id="stage">
+    <canvas id="cv"></canvas>
+    <div class="hint" id="hint">끌어서 돌려 보기 · 휠로 확대</div>
+    <button class="reset" id="resetView">처음 시점으로</button>
+    <div class="inset" id="inset"><canvas id="cv2"></canvas><div class="tag">🔭 지구에서 본 모습</div><div class="wait" id="wait">?</div></div>
+  </div>
+  <aside id="panel"></aside>
+</main>
+<script>
+"use strict";
+const CASES = [
+  { tab: '별이 구름 안에', setup: '뜨거운 별이 가스·티끌 구름(성간 물질) <b>안에</b> 있어요.',
+    name: '방출 성운', col: 'var(--red)',
+    def: '성간 물질이 주변의 별빛을 흡수하여 가열되면서 스스로 빛을 내는 성운',
+    why: '별빛을 받은 가스가 뜨거워져 <b>스스로 빛을 내요</b>. 그 빛이 지구까지 와요. 주로 붉게 보여요.',
+    ex: '예: 오리온 대성운' },
+  { tab: '별이 구름 옆에', setup: '별이 가스·티끌 구름(성간 물질) <b>옆에</b> 있어요.',
+    name: '반사 성운', col: 'var(--blue)',
+    def: '성간 물질이 주변의 별빛을 반사하여 밝게 보이는 성운',
+    why: '구름은 스스로 빛을 내지 않아요. 옆에 있는 <b>별빛이 구름에 부딪혀 반사</b>되어 지구로 와요. 주로 파랗게 보여요.',
+    ex: '예: 마귀할멈 성운' },
+  { tab: '별들이 구름 뒤에', setup: '구름 <b>뒤쪽</b>에 별이 많고, 구름 가까이에는 밝은 별이 없어요.',
+    name: '암흑 성운', col: '#c9cce3',
+    def: '성간 물질이 뒤쪽에서 오는 별빛을 가로막아 어둡게 보이는 성운',
+    why: '뒤쪽 별에서 오는 빛이 <b>구름에 가로막혀</b> 지구까지 오지 못해요. 그래서 그 부분만 검게 보여요.',
+    ex: '예: 말머리성운, 은하수의 어두운 부분' },
+];
+const EARTH = [0, 0, 13];
+const STAR_POS = [[0.35, 0.25, 0.2], [-4.2, 2.1, -1.2], null];
+
+function rng(seed) {
+  return function () {
+    seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+    let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+const R = rng(7);
+const gauss = () => { let u = 0; while (u === 0) u = R(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * R()); };
+
+const BLOBS = [];
+for (let i = 0; i < 8; i++) {
+  const r = 1.6 * Math.cbrt(R()), th = R() * 2 * Math.PI, ph = Math.acos(2 * R() - 1);
+  BLOBS.push({ c: [r * Math.sin(ph) * Math.cos(th) * 1.3, r * Math.cos(ph) * 0.9, r * Math.sin(ph) * Math.sin(th)], s: 0.8 + R() * 0.6, a: 0.6 + R() * 0.6 });
+}
+BLOBS.push({ c: [0, 0, 0], s: 1.6, a: 1.0 });
+function density(x, y, z) {
+  let d = 0;
+  for (const b of BLOBS) {
+    const dx = x - b.c[0], dy = y - b.c[1], dz = z - b.c[2];
+    d += b.a * Math.exp(-(dx * dx + dy * dy + dz * dz) / (2 * b.s * b.s));
+  }
+  return d;
+}
+const totalA = BLOBS.reduce((s, b) => s + b.a * b.s ** 3, 0);
+const NC = 2400;
+const cloud = [];
+for (let i = 0; i < NC; i++) {
+  let u = R() * totalA, b = BLOBS[0];
+  for (const bb of BLOBS) { u -= bb.a * bb.s ** 3; if (u <= 0) { b = bb; break; } }
+  cloud.push([b.c[0] + gauss() * b.s, b.c[1] + gauss() * b.s, b.c[2] + gauss() * b.s]);
+}
+function tau(p, q, k) {
+  const n = 12; let t = 0;
+  const L = Math.hypot(q[0] - p[0], q[1] - p[1], q[2] - p[2]);
+  for (let i = 1; i <= n; i++) {
+    const f = (i - 0.5) / n;
+    t += density(p[0] + (q[0] - p[0]) * f, p[1] + (q[1] - p[1]) * f, p[2] + (q[2] - p[2]) * f);
+  }
+  return k * t * L / n;
+}
+const LIGHT = [
+  cloud.map((p) => { const s = STAR_POS[0]; const d = Math.hypot(p[0] - s[0], p[1] - s[1], p[2] - s[2]); return 0.12 + 0.88 * Math.exp(-d * d / (2 * 1.7 * 1.7)); }),
+  cloud.map((p) => { const s = STAR_POS[1]; const d = Math.hypot(p[0] - s[0], p[1] - s[1], p[2] - s[2]); return Math.min(1, 9 / (d * d)) * Math.exp(-tau(p, s, 0.55)) * 0.95 + 0.03; }),
+  cloud.map(() => 1),
+];
+const sky = [];
+for (let i = 0; i < 700; i++) {
+  const th = R() * 2 * Math.PI, ph = Math.acos(2 * R() - 1), r = 70;
+  sky.push([r * Math.sin(ph) * Math.cos(th), r * Math.cos(ph), r * Math.sin(ph) * Math.sin(th), 0.3 + R() * 0.7]);
+}
+const wall = [];
+for (let i = 0; i < 4200; i++) {
+  const bright = R() < 0.1;
+  wall.push([(R() - 0.5) * 44, (R() - 0.5) * 30, -11 + (R() - 0.5) * 3, bright ? 0.7 + R() * 0.3 : 0.25 + R() * 0.35, bright]);
+}
+
+function sprite(r, g, b, a) {
+  const c = document.createElement('canvas'); c.width = c.height = 64;
+  const x = c.getContext('2d'), gr = x.createRadialGradient(32, 32, 0, 32, 32, 32);
+  gr.addColorStop(0, `rgba(${r},${g},${b},${a})`); gr.addColorStop(0.45, `rgba(${r},${g},${b},${a * 0.45})`); gr.addColorStop(1, `rgba(${r},${g},${b},0)`);
+  x.fillStyle = gr; x.fillRect(0, 0, 64, 64); return c;
+}
+const SPR = { red: sprite(255, 70, 100, 1), pink: sprite(255, 170, 190, 1), blue: sprite(110, 165, 255, 1), dark: sprite(26, 20, 22, 0.95), star: sprite(255, 250, 235, 1), hot: sprite(200, 225, 255, 1), earth: sprite(70, 150, 255, 1) };
+
+function camera(pos, target, fov, w, h) {
+  const f = [target[0] - pos[0], target[1] - pos[1], target[2] - pos[2]];
+  const fl = Math.hypot(...f) || 1; f[0] /= fl; f[1] /= fl; f[2] /= fl;
+  if (!f.some(Boolean)) f[2] = -1;
+  const r = Math.abs(f[1]) > 0.999 ? [1, 0, 0] : [-f[2], 0, f[0]]; const rl = Math.hypot(...r) || 1; r[0] /= rl; r[1] /= rl; r[2] /= rl;
+  const u = [r[1] * f[2] - r[2] * f[1], r[2] * f[0] - r[0] * f[2], r[0] * f[1] - r[1] * f[0]];
+  const k = (h / 2) / Math.tan(fov / 2);
+  return {
+    k, w, h, pos, f, r, u,
+    p(q) {
+      const d = [q[0] - pos[0], q[1] - pos[1], q[2] - pos[2]];
+      const z = d[0] * f[0] + d[1] * f[1] + d[2] * f[2];
+      if (z <= 0.1) return null;
+      return [w / 2 + k * (d[0] * r[0] + d[1] * r[1] + d[2] * r[2]) / z, h / 2 - k * (d[0] * u[0] + d[1] * u[1] + d[2] * u[2]) / z, z];
+    },
+  };
+}
+
+const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
+const cv2 = document.getElementById('cv2'), ctx2 = cv2.getContext('2d');
+const stage = document.getElementById('stage'), inset = document.getElementById('inset');
+const VIEW0 = { yaw: 0.85, pitch: 0.28, dist: 20, tx: 1.5, ty: -1.2, tz: 4.5 };
+let view = Object.assign({}, VIEW0);
+let cur = 0;
+const state = { earth: false, rays: false, name: false };
+
+function fit(c) {
+  const r = c.getBoundingClientRect(), dpr = Math.min(window.devicePixelRatio || 1, 2);
+  if (c.width !== Math.round(r.width * dpr) || c.height !== Math.round(r.height * dpr)) { c.width = Math.round(r.width * dpr); c.height = Math.round(r.height * dpr); }
+  return dpr;
+}
+
+function drawScene(g, cam, ci, o) {
+  const W = cam.w, H = cam.h, dpr = o.dpr;
+  g.fillStyle = '#000'; g.fillRect(o.x0 || 0, 0, W, H);
+  g.save(); g.translate(o.x0 || 0, 0); g.beginPath(); g.rect(0, 0, W, H); g.clip();
+  g.globalCompositeOperation = 'source-over';
+  for (const s of sky) {
+    const q = cam.p(s); if (!q) continue;
+    g.fillStyle = `rgba(255,255,255,${s[3] * 0.6})`; g.fillRect(q[0], q[1], 1.3 * dpr, 1.3 * dpr);
+  }
+  const items = [];
+  if (ci === 2) wall.forEach((s) => { const q = cam.p(s); if (q) items.push([q[2], 0, q, s]); });
+  cloud.forEach((p, i) => { const q = cam.p(p); if (q) items.push([q[2], 1, q, i]); });
+  const st = STAR_POS[ci];
+  if (st) { const q = cam.p(st); if (q) items.push([q[2] - 0.001, 2, q]); }
+  if (o.earth) { const q = cam.p(EARTH); if (q) items.push([q[2], 3, q]); }
+  if (ci === 2) items.sort((a, b) => b[0] - a[0]);
+  const L = LIGHT[ci];
+  for (const it of items) {
+    const q = it[2];
+    if (it[1] === 0) {
+      const s = it[3], sz = (s[4] ? 2.4 : 1.4) * dpr;
+      g.globalCompositeOperation = 'lighter'; g.globalAlpha = s[3];
+      g.drawImage(SPR.star, q[0] - sz * 2, q[1] - sz * 2, sz * 4, sz * 4);
+    } else if (it[1] === 1) {
+      const sz = Math.max(2, cam.k * 0.72 / q[2]);
+      if (ci === 2) {
+        g.globalCompositeOperation = 'source-over'; g.globalAlpha = 0.5; g.drawImage(SPR.dark, q[0] - sz, q[1] - sz, sz * 2, sz * 2);
+      } else {
+        const b = L[it[3]];
+        g.globalCompositeOperation = 'lighter'; g.globalAlpha = Math.min(1, b * (ci === 0 ? 0.016 : 0.035));
+        g.drawImage(ci === 0 ? (b > 0.97 ? SPR.pink : SPR.red) : SPR.blue, q[0] - sz, q[1] - sz, sz * 2, sz * 2);
+      }
+    } else if (it[1] === 2) {
+      const sz = Math.max(10 * dpr, cam.k * 0.9 / q[2]);
+      g.globalCompositeOperation = 'lighter'; g.globalAlpha = 1;
+      g.drawImage(ci === 0 ? SPR.hot : SPR.star, q[0] - sz, q[1] - sz, sz * 2, sz * 2);
+      g.drawImage(SPR.star, q[0] - sz * 0.4, q[1] - sz * 0.4, sz * 0.8, sz * 0.8);
+    } else {
+      const sz = Math.max(7 * dpr, cam.k * 0.5 / q[2]);
+      g.globalCompositeOperation = 'source-over'; g.globalAlpha = 1;
+      g.drawImage(SPR.earth, q[0] - sz * 1.6, q[1] - sz * 1.6, sz * 3.2, sz * 3.2);
+      g.fillStyle = '#3b8cff'; g.beginPath(); g.arc(q[0], q[1], sz * 0.55, 0, 7); g.fill();
+    }
+  }
+  g.globalAlpha = 1; g.globalCompositeOperation = 'source-over';
+  g.restore();
+}
+
+function label(g, cam, p, text, color, dy, dpr) {
+  const q = cam.p(p); if (!q) return;
+  g.font = `700 ${14 * dpr}px "Malgun Gothic", sans-serif`;
+  const w = g.measureText(text).width + 14 * dpr, x = q[0] - w / 2, y = q[1] + dy * dpr;
+  g.fillStyle = 'rgba(7,10,31,.78)'; g.beginPath(); g.roundRect ? g.roundRect(x, y - 13 * dpr, w, 22 * dpr, 8 * dpr) : g.rect(x, y - 13 * dpr, w, 22 * dpr); g.fill();
+  g.fillStyle = color; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(text, q[0], y - 2 * dpr);
+}
+
+let photons = [];
+function spawn(ci) {
+  if (ci === 0) {
+    const i = Math.floor(R() * NC); if (LIGHT[0][i] < 0.45) return;
+    const p = cloud[i];
+    photons.push({ a: STAR_POS[0], b: p, c: EARTH, t: 0, col1: '#e6f0ff', col2: '#ff5d73' });
+  } else if (ci === 1) {
+    const i = Math.floor(R() * NC); if (LIGHT[1][i] < 0.35) return;
+    photons.push({ a: STAR_POS[1], b: cloud[i], c: EARTH, t: 0, col1: '#fff4cf', col2: '#7fb2ff' });
+  } else {
+    const s = wall[Math.floor(R() * wall.length)];
+    if (Math.abs(s[0]) > 7 || Math.abs(s[1]) > 5) return;
+    const blocked = tau(s, EARTH, 0.55) > 1.2;
+    let stop = null;
+    if (blocked) {
+      for (let f = 0; f <= 1; f += 0.02) {
+        const q = [s[0] + (EARTH[0] - s[0]) * f, s[1] + (EARTH[1] - s[1]) * f, s[2] + (EARTH[2] - s[2]) * f];
+        if (density(...q) > 0.5) { stop = q; break; }
+      }
+    }
+    photons.push({ a: s, b: stop || EARTH, c: null, t: 0, col1: '#fff4cf', col2: null, dies: !!stop });
+  }
+}
+function lerp(a, b, f) { return [a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f, a[2] + (b[2] - a[2]) * f]; }
+function drawPhotons(g, cam, dt, dpr) {
+  const SPEED = 9;
+  photons.forEach((ph) => {
+    const L1 = Math.hypot(ph.b[0] - ph.a[0], ph.b[1] - ph.a[1], ph.b[2] - ph.a[2]);
+    const L2 = ph.c ? Math.hypot(ph.c[0] - ph.b[0], ph.c[1] - ph.b[1], ph.c[2] - ph.b[2]) : 0;
+    ph.t += dt * SPEED;
+    let pos, prev, col, alpha = 1;
+    if (ph.t < L1) { pos = lerp(ph.a, ph.b, ph.t / L1); prev = lerp(ph.a, ph.b, Math.max(0, ph.t - 1.2) / L1); col = ph.col1; }
+    else if (ph.c && ph.t < L1 + L2) { const f = (ph.t - L1) / L2; pos = lerp(ph.b, ph.c, f); prev = lerp(ph.b, ph.c, Math.max(0, ph.t - L1 - 1.2) / L2); col = ph.col2; }
+    else if (ph.dies && ph.t < L1 + 1.5) { pos = ph.b; prev = ph.b; col = ph.col1; alpha = 1 - (ph.t - L1) / 1.5; }
+    else { ph.done = true; return; }
+    const q = cam.p(pos), q0 = cam.p(prev); if (!q || !q0) return;
+    g.globalAlpha = alpha; g.strokeStyle = col; g.lineWidth = 2.2 * dpr; g.lineCap = 'round';
+    g.beginPath(); g.moveTo(q0[0], q0[1]); g.lineTo(q[0], q[1]); g.stroke();
+    g.fillStyle = col; g.beginPath(); g.arc(q[0], q[1], 2.6 * dpr, 0, 7); g.fill();
+    if (ph.dies && ph.t >= L1) { g.strokeStyle = '#ff9f43'; g.lineWidth = 2 * dpr; g.beginPath(); g.moveTo(q[0] - 6 * dpr, q[1] - 6 * dpr); g.lineTo(q[0] + 6 * dpr, q[1] + 6 * dpr); g.moveTo(q[0] + 6 * dpr, q[1] - 6 * dpr); g.lineTo(q[0] - 6 * dpr, q[1] + 6 * dpr); g.stroke(); }
+  });
+  g.globalAlpha = 1;
+  photons = photons.filter((p) => !p.done);
+}
+
+function eyeCam(w, h) { return camera(EARTH, [0, 0, 0], 44 * Math.PI / 180, w, h); }
+
+let last = performance.now(), acc = 0, frameId = 0;
+function invalidate() { if (!frameId) frameId = requestAnimationFrame(frame); }
+function frame(now) {
+  frameId = 0;
+  const dt = Math.min(0.05, (now - last) / 1000); last = now;
+  const dpr = fit(cv), W = cv.width, H = cv.height;
+  if (cur === 4) {
+    drawFree(dpr);
+  } else if (cur < 3) {
+    const cp = Math.cos(view.pitch), tgt = [view.tx, view.ty, view.tz];
+    const pos = [tgt[0] + view.dist * cp * Math.sin(view.yaw), tgt[1] + view.dist * Math.sin(view.pitch), tgt[2] + view.dist * cp * Math.cos(view.yaw)];
+    const cam = camera(pos, tgt, 50 * Math.PI / 180, W, H);
+    drawScene(ctx, cam, cur, { dpr, earth: true });
+    const a = cam.p(EARTH), b = cam.p([0, 0, 0]);
+    if (a && b) { ctx.setLineDash([6 * dpr, 6 * dpr]); ctx.strokeStyle = 'rgba(44,177,188,.7)'; ctx.lineWidth = 1.5 * dpr; ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke(); ctx.setLineDash([]); }
+    if (state.rays) {
+      acc += dt; const rate = cur === 2 ? 0.02 : 0.03;
+      while (acc > rate) { acc -= rate; spawn(cur); }
+      drawPhotons(ctx, cam, dt, dpr);
+    }
+    if (STAR_POS[cur]) label(ctx, cam, STAR_POS[cur], cur === 0 ? '★ 뜨거운 별' : '★ 별', '#f4b942', 34, dpr);
+    label(ctx, cam, [0, 3.2, 0], '가스·티끌 구름 (성간 물질)', '#eef0ff', -18, dpr);
+    label(ctx, cam, EARTH, '🌍 지구', '#7fb2ff', 28, dpr);
+    if (cur === 2) label(ctx, cam, [-12, 9, -11], '구름 뒤쪽의 별들', '#c9cce3', 0, dpr);
+    if (state.earth) {
+      const d2 = fit(cv2);
+      drawScene(ctx2, eyeCam(cv2.width, cv2.height), cur, { dpr: d2, earth: false });
+    }
+  } else {
+    ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, H);
+    if(W/dpr<620){
+      const rowH=H/3, imageW=Math.floor(W*.59), imageH=Math.floor(rowH-12*dpr);
+      for(let i=0;i<3;i++){
+        const off=document.createElement('canvas');off.width=imageW;off.height=imageH;
+        drawScene(off.getContext('2d'),eyeCam(imageW,imageH),i,{dpr,earth:false});
+        ctx.drawImage(off,4*dpr,i*rowH+6*dpr);
+        ctx.font=`800 ${15*dpr}px "Malgun Gothic", sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillStyle=['#ff5d73','#7fb2ff','#c9cce3'][i];
+        const lines=state.name?[CASES[i].name]:[['① 별이','구름 안에'],['② 별이','구름 옆에'],['③ 별들이','구름 뒤에']][i];
+        lines.forEach((text,j)=>ctx.fillText(text,W*.81,(i+.5)*rowH+(j-(lines.length-1)/2)*24*dpr));
+      }
+    }else{
+    const pw = Math.floor(W / 3), ph = Math.min(H - 70 * dpr, Math.round(pw * 0.75)), y0 = Math.round((H - ph) / 2) - 10 * dpr;
+    for (let i = 0; i < 3; i++) {
+      const off = document.createElement('canvas'); off.width = pw - 8 * dpr; off.height = ph;
+      const g = off.getContext('2d');
+      drawScene(g, eyeCam(off.width, off.height), i, { dpr, earth: false });
+      ctx.drawImage(off, i * pw + 4 * dpr, y0);
+      ctx.font = `800 ${20 * dpr}px "Malgun Gothic", sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+      ctx.fillStyle = ['#ff5d73', '#7fb2ff', '#c9cce3'][i];
+      ctx.fillText(state.name ? CASES[i].name : ['① 별이 구름 안에', '② 별이 구름 옆에', '③ 별들이 구름 뒤에'][i], i * pw + pw / 2, y0 + ph + 10 * dpr);
+    }
+    }
+  }
+  if (cur < 3 && state.rays && !document.hidden) invalidate();
+}
+
+const FREE_VIEW = { yaw: 0.42, pitch: 0.36, dist: 26, tx: 0, ty: 0, tz: 3 };
+const free = { objects: [], next: 1, selected: null, tool: '', wall: true, answer: false, target: '', challenge: '', won: new Set(), history: new Map(), dirty: true, lightDirty: true, quality: 156, hits: [], stats: null };
+const freeNames = { cloud: '가스·티끌 구름', hot: '뜨거운 별', star: '보통 별', eye: '내 위치' };
+const freeChallenges = [
+  ['red', '방출 성운을 만들어 보자', '뜨거운 별과 구름을 가까이 놓아 보세요.'],
+  ['blue', '반사 성운을 만들어 보자', '보통 별을 구름 바깥 가까이에 놓아 보세요.'],
+  ['horse', '빛나는 성운 앞에 암흑 성운 만들기', '앞쪽 구름에 별빛이 닿지 않게 해 보세요.'],
+  ['move', '같은 구름을 다른 위치에서 바라보기', '구름과 별은 그대로 두고 내 위치를 옮겨 보세요. 보이는 종류가 달라질까요?'],
+  ['all', '세 종류를 한 화면에 담아 보자', '붉은 빛, 파란 빛, 빛을 가린 부분이 함께 보이게 해 보세요.']
+];
+const freeCanvas = document.createElement('canvas'), freeCtx = freeCanvas.getContext('2d', { willReadFrequently: true });
+const freeMist = sprite(115, 126, 169, 1);
+const freeTools = document.createElement('div'); freeTools.className = 'free-tools'; freeTools.hidden = true;
+freeTools.innerHTML = `<button data-tool="cloud">＋ 구름</button><button data-tool="hot">＋ 뜨거운 별</button><button data-tool="star">＋ 보통 별</button><button data-tool="eye">⊕ 내 위치</button><div class="zoom"><button data-zoom="0.85" aria-label="확대">＋</button><button data-zoom="1.18" aria-label="축소">−</button><button id="freeViewReset" aria-label="처음 시점으로">↺</button></div>`;
+stage.append(freeTools);
+const freeHelp = document.createElement('div'); freeHelp.className = 'free-help'; freeHelp.hidden = true;
+freeHelp.innerHTML = '<b>별빛과 구름의 놀이터</b><span>동그란 손잡이를 끌어 옮겨요 · 빈 곳을 끌면 돌아가요</span><span>휠·두 손가락·＋ −로 확대해요 · 앞뒤는 조절 막대로 바꿔요</span>';
+stage.append(freeHelp);
+const freeMessage = document.createElement('div'); freeMessage.className = 'free-message'; freeMessage.hidden = true; freeMessage.setAttribute('role', 'status'); stage.append(freeMessage);
+const vsub = (a, b) => a.map((v, i) => v - b[i]);
+const vadd = (a, b) => a.map((v, i) => v + b[i]);
+const vmul = (a, s) => a.map(v => v * s);
+const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+const distance = (a, b) => Math.hypot(a[0]-b[0],a[1]-b[1],a[2]-b[2]);
+const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+function freeObject(type, p, r = 2, shape = '') {
+  const o = { id: free.next++, type, p: p.slice(), r, shape }; free.objects.push(o); return o;
+}
+function freeChanged(lighting = true) {
+  free.dirty = true; free.lightDirty ||= lighting;
+  const result = document.getElementById('freeResult'); if (result && !free.won.has(free.challenge)) result.textContent = '';
+  invalidate();
+}
+function freeMessageText(text) { freeMessage.textContent = text; }
+function loadFreeScene(scene) {
+  free.preset=scene==='start'?'horse':scene;
+  free.objects = []; free.next = 1; free.selected = null; free.tool = ''; free.answer = false; free.target = ''; free.wall = true; free.history.clear();
+  if (scene === 'horse') {
+    freeObject('cloud', [0, 0, -3.5], 4.7); freeObject('hot', [-2.3, 0.8, -3.7]);
+    freeObject('cloud', [0.25, -0.2, 3.5], 1.5, 'horse');
+  } else if (scene === 'triple') {
+    freeObject('cloud', [-1.6, 0, -1.3], 3.3); freeObject('hot', [-2.5, 0.4, -1.5]);
+    freeObject('cloud', [3.3, 1.9, -0.2], 1.8); freeObject('star', [5.6, 2.5, 0.6]);
+    freeObject('cloud', [-1.2, -0.1, 3.9], 1.5, 'lanes');
+  } else if (scene === 'cluster') {
+    freeObject('cloud', [-1.6, 0, 0], 1.7); freeObject('cloud', [1.8, -0.5, -0.7], 1.8);
+    [[-3.6, 1, 0.4], [0.3, 1.8, 0.3], [3.7, 0.7, 0.7], [1.8, -2.6, 0.3], [-1.6, -2.3, 0]].forEach(p => freeObject('star', p));
+  } else {
+    freeObject('cloud', [0, 0, 0], 2.4); freeObject('hot', [4.8, 1.3, 0]);
+  }
+  freeObject('eye', [0, 0.6, 15]); free.selected = free.objects[0].id;
+  view = { ...FREE_VIEW }; freeChanged();
+  if (cur === 4) renderFreePanel();
+  freeTools.querySelectorAll('[data-tool]').forEach(b=>b.classList.remove('active'));
+  freeMessageText('아래에서 물체를 골라 빈 곳에 놓아 보세요.');
+}
+function cloudBound(o) { return o.r * (o.shape ? 1.85 : 1.15); }
+const horseBlobs=[[0,-0.35,0,0.38,1,0.42],[0.15,0.65,0,0.48,0.4,0.4],[0.6,0.57,0,0.44,0.23,0.32],[-0.06,1.02,0,0.16,0.34,0.23],[-0.2,-1.1,0,0.95,0.34,0.5]];
+const laneDirections=[Math.PI/2,-Math.PI/6,Math.PI*7/6].map(a=>[Math.cos(a),Math.sin(a)]);
+function freeDensity(o, px, py, pz) {
+  const x = (px - o.p[0]) / o.r, y = (py - o.p[1]) / o.r, z = (pz - o.p[2]) / o.r;
+  if (o.shape === 'horse') {
+    let d = 0;
+    for (const b of horseBlobs) {
+      d = Math.max(d, 1 - ((x-b[0])/b[3])**2 - ((y-b[1])/b[4])**2 - ((z-b[2])/b[5])**2);
+    }
+    return Math.max(0, d) * 1.8;
+  }
+  if(o.shape==='lanes'){
+    let d=0;for(const [c,s] of laneDirections){const u=x*c+y*s,v=-x*s+y*c;d=Math.max(d,1-((u-.45)/.95)**2-(v/.19)**2-(z/.3)**2);}return Math.max(0,d)*1.8;
+  }
+  const n = x*x + y*y + z*z;
+  return Math.max(0, 1 - n + 0.13 * Math.sin(x*8+y*3) * Math.cos(y*7-z*5)) * (0.85 + 0.15*Math.cos(x*11+z*8));
+}
+function sphereInterval(pos, dir, o) {
+  const v = vsub(pos, o.p), b = dot(v, dir), q = b*b - dot(v,v) + cloudBound(o)**2;
+  if (q <= 0) return null;
+  const t = Math.sqrt(q); return [-b-t, -b+t];
+}
+function cloudDepth(o, a, b) {
+  const len=distance(a,b);if(len<.001)return 0;
+  const dx=(b[0]-a[0])/len,dy=(b[1]-a[1])/len,dz=(b[2]-a[2])/len,vx=a[0]-o.p[0],vy=a[1]-o.p[1],vz=a[2]-o.p[2];
+  const along=vx*dx+vy*dy+vz*dz,q=along*along-vx*vx-vy*vy-vz*vz+cloudBound(o)**2;if(q<=0)return 0;
+  const root=Math.sqrt(q),lo=Math.max(0,-along-root),hi=Math.min(len,-along+root);if(hi<=lo)return 0;
+  let sum = 0;
+  for(let i=0;i<5;i++){const t=lo+(hi-lo)*(i+.5)/5;sum+=freeDensity(o,a[0]+dx*t,a[1]+dy*t,a[2]+dz*t);}
+  return sum*(hi-lo)/5*2.6;
+}
+function freeLighting(o, p, clouds, stars) {
+  let red = 0, blue = 0;
+  for (const s of stars) {
+    const d = distance(p,s.p), center = distance(o.p,s.p);
+    let shade = 1;
+    for (const other of clouds) if (other !== o) shade *= Math.exp(-cloudDepth(other,p,s.p));
+    if (shade < 0.005) continue;
+    const heat = s.type === 'hot' ? clamp(1-(center-o.r)/1.4,0,1) * 2.5/(1+(d/(o.r*0.7+0.6))**2) * shade : 0;
+    red += heat;
+    const self = Math.exp(-cloudDepth(o,p,s.p)*0.8);
+    blue += 8/(d*d+1) * self * shade * (1-clamp(heat,0,0.95));
+  }
+  return [Math.min(2.3,red),Math.min(2.3,blue)];
+}
+function prepareFreeClouds() {
+  if (!free.lightDirty) return;
+  const clouds = free.objects.filter(o=>o.type==='cloud'), stars = free.objects.filter(o=>o.type==='hot'||o.type==='star');
+  for (const o of clouds) {
+    const n = free.interacting?11:17, b = cloudBound(o), data = new Float32Array(n*n*n*3); o.grid = { n, b, data }; o.dots = [];
+    for (let z=0;z<n;z++) for (let y=0;y<n;y++) for (let x=0;x<n;x++) {
+      const p = [o.p[0]+(x/(n-1)*2-1)*b,o.p[1]+(y/(n-1)*2-1)*b,o.p[2]+(z/(n-1)*2-1)*b];
+      const den = freeDensity(o,...p); if (!den) continue;
+      const light = freeLighting(o,p,clouds,stars), j=((z*n+y)*n+x)*3;
+      data[j]=den; data[j+1]=den*light[0]; data[j+2]=den*light[1];
+      if (x%2===0 && y%2===0 && z%2===0) o.dots.push({p,den,light});
+    }
+  }
+  free.lightDirty = false;
+}
+function sampleFreeCloud(o, p, out) {
+  const {n,b,data}=o.grid, k=(n-1)/(2*b);
+  const before=out[0];
+  const x=(p[0]-o.p[0]+b)*k, y=(p[1]-o.p[1]+b)*k, z=(p[2]-o.p[2]+b)*k;
+  if (x<0||y<0||z<0||x>=n-1||y>=n-1||z>=n-1) return;
+  const ix=Math.floor(x),iy=Math.floor(y),iz=Math.floor(z),fx=x-ix,fy=y-iy,fz=z-iz;
+  if(free.interacting){const j=((Math.round(z)*n+Math.round(y))*n+Math.round(x))*3;out[0]+=data[j];out[1]+=data[j+1];out[2]+=data[j+2];return data[j];}
+  for(let dz=0;dz<2;dz++) for(let dy=0;dy<2;dy++) for(let dx=0;dx<2;dx++) {
+    const w=(dx?fx:1-fx)*(dy?fy:1-fy)*(dz?fz:1-fz),j=(((iz+dz)*n+iy+dy)*n+ix+dx)*3;
+    out[0]+=data[j]*w; out[1]+=data[j+1]*w; out[2]+=data[j+2]*w;
+  }
+  return out[0]-before;
+}
+const freeWall = Array.from({length:1300},()=>[(R()-0.5)*65,(R()-0.5)*38,-25,0.3+R()*0.7]);
+function freeTarget(eye) {
+  const clouds=free.objects.filter(o=>o.type==='cloud');
+  const chosen=clouds.find(o=>String(o.id)===free.target);
+  const target=chosen ? chosen.p.slice() : clouds.length ? clouds.reduce((a,o)=>vadd(a,vmul(o.p,1/clouds.length)),[0,0,0]) : [0,0,0];
+  if(distance(eye.p,target)<0.1) target[2]-=1;
+  return target;
+}
+function drawFreeEye() {
+  if(!free.dirty) return;
+  free.dirty=false;
+  const canvas=document.getElementById('freeEye'); if(!canvas) return;
+  const eye=free.objects.find(o=>o.type==='eye'), g=canvas.getContext('2d');
+  const w=free.interacting?Math.min(92,free.quality):free.quality, h=Math.round(w*0.61); free.renderWidth=w;freeCanvas.width=w; freeCanvas.height=h;
+  canvas.width=w*2; canvas.height=h*2;
+  if(!eye) {
+    g.fillStyle='#05081c';g.fillRect(0,0,canvas.width,canvas.height);g.fillStyle='#c9d0f9';g.textAlign='center';g.font='15px sans-serif';
+    g.fillText('「⊕ 내 위치」를 눌러 놓아 주세요',canvas.width/2,canvas.height/2);
+    free.stats={red:0,blue:0,dark:0,horse:0}; updateFreeFeedback(); return;
+  }
+  const cam=camera(eye.p,freeTarget(eye),58*Math.PI/180,w,h), clouds=free.objects.filter(o=>o.type==='cloud');
+  freeCtx.fillStyle='#02040a';freeCtx.fillRect(0,0,w,h);
+  if(free.wall) {
+    for(const s of freeWall) {
+      const p=cam.p(s);if(!p)continue;
+      freeCtx.fillStyle=`rgba(210,218,255,${s[3]})`;freeCtx.fillRect(p[0],p[1],s[3]>.85?1.5:0.8,s[3]>.85?1.5:0.8);
+    }
+    const a=cam.p([-32,0,-25]),b=cam.p([32,0,-25]);
+    if(a&&b){const mid=(a[1]+b[1])/2,grad=freeCtx.createLinearGradient(0,mid-h*.42,0,mid+h*.42);grad.addColorStop(0,'rgba(96,103,149,0)');grad.addColorStop(.5,'rgba(96,103,149,.3)');grad.addColorStop(1,'rgba(96,103,149,0)');freeCtx.strokeStyle=grad;freeCtx.lineWidth=h*.84;freeCtx.lineCap='round';freeCtx.beginPath();freeCtx.moveTo(a[0],a[1]);freeCtx.lineTo(b[0],b[1]);freeCtx.stroke();}
+  }
+  const image=freeCtx.getImageData(0,0,w,h), pixels=image.data, stats={red:0,blue:0,dark:0,horse:0};
+  for(let y=0;y<h;y++) for(let x=0;x<w;x++) {
+    const dir=vadd(cam.f,vadd(vmul(cam.r,(x+0.5-w/2)/cam.k),vmul(cam.u,-(y+0.5-h/2)/cam.k)));
+    const len=Math.hypot(...dir);dir[0]/=len;dir[1]/=len;dir[2]/=len;
+    const segments=[];
+    for(const o of clouds){const ab=sphereInterval(eye.p,dir,o);if(ab&&ab[1]>.05)segments.push({o,lo:Math.max(.05,ab[0]),hi:ab[1]});}
+    if(!segments.length) continue;
+    const lo=Math.min(...segments.map(s=>s.lo)),hi=Math.max(...segments.map(s=>s.hi)),step=Math.min(.27,(hi-lo)/20);
+    const j=(y*w+x)*4;let cr=pixels[j]/255,cg=pixels[j+1]/255,cb=pixels[j+2]/255,red=0,blue=0,dark=0,horse=0,backSource=Math.max(cr,cg,cb)>.06?0:null;
+    const p=[0,0,0], out=[0,0,0];
+    for(let t=hi-step*.5;t>=lo;t-=step) {
+      p[0]=eye.p[0]+dir[0]*t;p[1]=eye.p[1]+dir[1]*t;p[2]=eye.p[2]+dir[2]*t;
+      out[0]=out[1]=out[2]=0;
+      let owner=null,largest=0;
+      for(const s of segments)if(t>=s.lo&&t<=s.hi){const amount=sampleFreeCloud(s.o,p,out)||0;if(amount>largest){largest=amount;owner=s.o.id;}}
+      const den=out[0];if(den<.001)continue;
+      const a=1-Math.exp(-den*step*2.6),e=out[1]/den,b=out[2]/den,lum=Math.max(cr,cg,cb);
+      const shadow=e+b<.12&&(backSource===0||(backSource!==null&&backSource!==owner)) ? lum*a : 0;
+      dark=dark*(1-a)+shadow;
+      horse=horse*(1-a)+(red>.1&&shadow>.001?shadow:0);
+      cr=cr*(1-a)+(e*.94+b*.22)*a;cg=cg*(1-a)+(e*.12+b*.43)*a;cb=cb*(1-a)+(e*.25+b)*a;
+      red=red*(1-a)+e*a;blue=blue*(1-a)+b*a;
+      if(e+b>.15&&a>.01)backSource=owner;
+    }
+    pixels[j]=clamp(cr*255,0,255);pixels[j+1]=clamp(cg*255,0,255);pixels[j+2]=clamp(cb*255,0,255);
+    if(red>.16)stats.red++;if(blue>.13)stats.blue++;if(dark>.035)stats.dark++;if(horse>.035)stats.horse++;
+  }
+  freeCtx.putImageData(image,0,0);
+  for(const s of free.objects.filter(o=>o.type==='star'||o.type==='hot')) {
+    const q=cam.p(s.p);if(!q)continue;
+    const opacity=Math.exp(-clouds.reduce((sum,o)=>sum+cloudDepth(o,eye.p,s.p),0));
+    freeCtx.globalAlpha=opacity;const size=clamp(cam.k*.18/q[2],2,11);
+    freeCtx.globalCompositeOperation='lighter';freeCtx.drawImage(s.type==='hot'?SPR.hot:SPR.star,q[0]-size*2,q[1]-size*2,size*4,size*4);
+    freeCtx.globalAlpha=1;freeCtx.globalCompositeOperation='source-over';
+    if(opacity<.2&&q[0]>=0&&q[0]<w&&q[1]>=0&&q[1]<h){const j=(Math.floor(q[1])*w+Math.floor(q[0]))*4;if(Math.max(pixels[j],pixels[j+1],pixels[j+2])<24)stats.dark+=4;}
+  }
+  g.imageSmoothingEnabled=true;g.drawImage(freeCanvas,0,0,canvas.width,canvas.height);
+  free.stats=stats;updateFreeFeedback();
+}
+function freeKinds() {
+  const s=free.stats||{}, threshold=Math.max(6,(free.renderWidth||free.quality)**2*.0006);
+  return {red:s.red>=threshold,blue:s.blue>=threshold,dark:s.dark>=threshold,horse:s.horse>=threshold};
+}
+function updateFreeFeedback() {
+  const kinds=freeKinds(), answer=document.getElementById('freeAnswer');
+  if(answer&&free.answer) {
+    const rows=[];
+    if(kinds.red)rows.push(`<b style="color:var(--red)">방출 성운</b> — ${CASES[0].def} (주로 붉게)`);
+    if(kinds.blue)rows.push(`<b style="color:var(--blue)">반사 성운</b> — ${CASES[1].def} (주로 파랗게)`);
+    if(kinds.dark)rows.push(`<b>암흑 성운</b> — ${CASES[2].def}`);
+    answer.innerHTML=rows.length?rows.map(s=>`<p>${s}</p>`).join(''):'뚜렷한 성운이 아직 보이지 않아요. 별과 구름의 거리, 앞뒤 위치를 바꿔 보세요.';
+    answer.innerHTML+='<p class="eye-caption">이름은 지금 내 위치에서 보이는 부분을 보고 대략 판단해요. 한 구름에서도 여러 종류가 함께 보일 수 있어요.</p>';
+  }
+  const eye=free.objects.find(o=>o.type==='eye');
+  let moved=false;
+  if(eye&&!free.interacting&&free.challenge==='move') {
+    const key=JSON.stringify([free.objects.filter(o=>o.type!=='eye').map(o=>[o.id,o.type,o.p,o.r]),free.wall,free.target]);
+    const signature=['red','blue','dark'].filter(k=>kinds[k]).join(',');
+    const old=free.history.get(key);
+    if(old&&old.signature!==signature&&distance(old.eye,eye.p)>2&&(old.signature||signature))moved=true;
+    if(!old)free.history.set(key,{signature,eye:eye.p.slice()});
+  }
+  const success={red:kinds.red,blue:kinds.blue,horse:kinds.horse,move:moved,all:kinds.red&&kinds.blue&&kinds.dark};
+  if(eye&&!free.interacting&&free.challenge&&success[free.challenge])free.won.add(free.challenge);
+  const result=document.getElementById('freeResult');if(result)result.textContent=free.won.has(free.challenge)?'✦ 해냈어요! 다른 배치도 찾아볼까요?':'';
+}
+function freeStageCamera() {
+  const cp=Math.cos(view.pitch),t=[view.tx,view.ty,view.tz];
+  const dist=view.dist*Math.max(1,.95/(cv.width/cv.height));
+  return camera([t[0]+dist*cp*Math.sin(view.yaw),t[1]+dist*Math.sin(view.pitch),t[2]+dist*cp*Math.cos(view.yaw)],t,50*Math.PI/180,cv.width,cv.height);
+}
+function drawFree(dpr) {
+  prepareFreeClouds();const cam=freeStageCamera(), W=cv.width,H=cv.height;
+  ctx.fillStyle='#030615';ctx.fillRect(0,0,W,H);ctx.strokeStyle='#1b2348';ctx.lineWidth=dpr;
+  for(let n=-12;n<=12;n+=3)for(const ends of [[[n,-3,-12],[n,-3,18]],[[-12,-3,n],[12,-3,n]]]) {
+    const a=cam.p(ends[0]),b=cam.p(ends[1]);if(!a||!b)continue;ctx.beginPath();ctx.moveTo(a[0],a[1]);ctx.lineTo(b[0],b[1]);ctx.stroke();
+  }
+  if(free.wall)for(let i=0;i<freeWall.length;i+=2){const s=freeWall[i],q=cam.p(s);if(q){ctx.fillStyle=`rgba(170,183,240,${s[3]*.7})`;ctx.fillRect(q[0],q[1],1.5*dpr,1.5*dpr);}}
+  const items=[];
+  for(const o of free.objects) {
+    if(o.type==='cloud')for(const p of o.dots){const q=cam.p(p.p);if(q)items.push({o,p,q});}
+    else {const q=cam.p(o.p);if(q)items.push({o,q});}
+  }
+  items.sort((a,b)=>b.q[2]-a.q[2]);
+  for(const {o,p,q} of items) {
+    const sz=clamp(cam.k*(p?o.r*.3:.35)/q[2],3*dpr,100*dpr);
+    if(p){
+      ctx.globalCompositeOperation='source-over';ctx.globalAlpha=.16*p.den;ctx.drawImage(SPR.dark,q[0]-sz,q[1]-sz,sz*2,sz*2);
+      ctx.globalCompositeOperation='lighter';
+      ctx.globalAlpha=.06*p.den;ctx.drawImage(freeMist,q[0]-sz,q[1]-sz,sz*2,sz*2);
+      ctx.globalAlpha=clamp(p.light[0]*p.den*.2,0,.5);ctx.drawImage(SPR.red,q[0]-sz,q[1]-sz,sz*2,sz*2);
+      ctx.globalAlpha=clamp(p.light[1]*p.den*.25,0,.5);ctx.drawImage(SPR.blue,q[0]-sz,q[1]-sz,sz*2,sz*2);
+    }else{ctx.globalCompositeOperation='lighter';ctx.globalAlpha=1;ctx.drawImage(o.type==='eye'?SPR.earth:o.type==='hot'?SPR.hot:SPR.star,q[0]-sz*2,q[1]-sz*2,sz*4,sz*4);}
+  }
+  ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over';free.hits=[];
+  const eye=free.objects.find(o=>o.type==='eye');
+  if(eye){const a=cam.p(eye.p),b=cam.p(freeTarget(eye));if(a&&b){ctx.strokeStyle='#2cb1bc';ctx.setLineDash([5*dpr,6*dpr]);ctx.beginPath();ctx.moveTo(...a.slice(0,2));ctx.lineTo(...b.slice(0,2));ctx.stroke();ctx.setLineDash([]);}}
+  for(const o of [...free.objects].sort((a,b)=>distance(b.p,cam.pos)-distance(a.p,cam.pos))) {
+    const q=cam.p(o.p);if(!q)continue;
+    const selected=o.id===free.selected, rad=22*dpr;
+    ctx.fillStyle=selected?'#f4b942':'#101a41';ctx.strokeStyle=selected?'#fff0b3':o.type==='eye'?'#5de0d0':'#929ed4';ctx.lineWidth=2*dpr;
+    ctx.beginPath();ctx.arc(q[0],q[1],rad,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.fillStyle=selected?'#11152c':o.type==='hot'?'#b1dfff':o.type==='star'?'#fff0bf':'#edf1ff';ctx.textAlign='center';ctx.textBaseline='middle';ctx.font=`700 ${18*dpr}px sans-serif`;ctx.fillText(o.type==='cloud'?'☁':o.type==='eye'?'⊕':o.type==='hot'?'✦':'★',q[0],q[1]);
+    if(selected||o.type==='eye')label(ctx,cam,o.p,freeNames[o.type]+(o.type==='cloud'?' '+o.id:''),selected?'#ffe2a0':'#d6dcff',40,dpr);
+    free.hits.push({id:o.id,x:q[0]/dpr,y:q[1]/dpr,r:26});
+  }
+  drawFreeEye();
+}
+function selectFree(id) {free.selected=id;syncFreeSelection();invalidate();}
+function syncFreeSelection() {
+  const picker=document.getElementById('freeSelection');if(!picker)return;
+  const o=free.objects.find(o=>o.id===free.selected);picker.value=o?o.id:'';
+  document.getElementById('freeSelected').hidden=!o;
+  if(!o)return;
+  for(let i=0;i<3;i++){document.getElementById('freeAxis'+i).value=o.p[i];document.getElementById('freeAxisOut'+i).value=o.p[i].toFixed(1);}
+  document.getElementById('freeSizeRow').hidden=o.type!=='cloud';document.getElementById('freeSize').value=o.r;document.getElementById('freeSizeOut').value=o.r.toFixed(1);
+}
+function renderFreePanel() {
+  const panel=document.getElementById('panel'), option=o=>`<option value="${o.id}">${freeNames[o.type]}${o.type==='eye'?'':' '+o.id}</option>`;
+  panel.innerHTML=`<div class="eye-screen"><h2>🔭 내 위치에서 본 모습</h2><canvas id="freeEye" role="img" aria-label="내 위치에서 본 구름과 별. 물체를 옮기면 모습이 바뀝니다."></canvas></div>
+    <div class="eye-caption">초록 점선 방향을 바라봐요 · 물체를 옮기며 비교해요</div>
+    <div class="free-controls">
+    <button class="btn" id="freeReveal" aria-expanded="${free.answer}">${free.answer?'🏷️ 이름 숨기기':'🏷️ 어떤 성운일까? 이름 확인'}</button><div id="freeAnswer" class="free-answer" ${free.answer?'':'hidden'} aria-live="polite"></div>
+    <div class="scene-picker"><select id="freePreset" aria-label="미리 만든 장면"><option value="horse">말머리성운처럼</option><option value="triple">삼렬 성운처럼</option><option value="cluster">플레이아데스처럼</option></select><button id="freeLoad">불러오기</button></div>
+    <label for="freeSelection">옮길 물체 고르기</label><select id="freeSelection"><option value="">물체를 골라 주세요</option>${free.objects.map(option).join('')}</select>
+    <div id="freeSelected"><div class="eye-caption">손잡이를 끌거나 아래 막대로 옮겨요</div>
+    ${['좌우','위아래','앞뒤'].map((s,i)=>`<label class="axis-control"><span>${s}</span><input id="freeAxis${i}" type="range" min="${i===1?-9:-18}" max="${i===1?9:18}" step="0.2" aria-label="${s} 위치"><output id="freeAxisOut${i}"></output></label>`).join('')}
+    <label class="axis-control" id="freeSizeRow"><span>구름 크기</span><input id="freeSize" type="range" min="0.7" max="5" step="0.1"><output id="freeSizeOut"></output></label>
+    <button class="btn" id="freeDelete">선택한 물체 지우기</button></div>
+    <details><summary>바라볼 곳 · 배경 · 그리기</summary><label for="freeTarget">바라볼 곳</label><select id="freeTarget"><option value="">구름들이 있는 가운데</option>${free.objects.filter(o=>o.type==='cloud').map(option).join('')}</select>
+    <p><label><input type="checkbox" id="freeWall" ${free.wall?'checked':''}> 뒤쪽 별 무리 켜기</label></p>
+    <label for="freeQuality">그리기</label><select id="freeQuality"><option value="156">가볍게 (느린 기기)</option><option value="220">더 자세하게</option></select></details>
+    <details open><summary>✦ 도전 카드</summary><select id="freeChallenge" aria-label="도전 카드 고르기"><option value="">마음대로 탐구하기</option>${freeChallenges.map(c=>`<option value="${c[0]}">${c[1]}</option>`).join('')}</select><p id="freeChallengeHint" class="eye-caption"></p><div id="freeResult" class="challenge-result" role="status"></div></details>
+    <button class="btn" id="freeReset">↺ 처음 상태로 되돌리기</button><div class="eye-caption">장면을 불러오거나 되돌리면 지금 배치가 바뀌어요.</div>
+    <div class="note">성간 물질: 별과 별 사이의 가스와 티끌<br>이 화면은 원리를 보여 주는 모형이에요. 실제 크기와 거리, 색은 다를 수 있어요.</div></div>`;
+  document.getElementById('freeReveal').onclick=()=>{free.answer=!free.answer;const b=document.getElementById('freeReveal');b.textContent=free.answer?'🏷️ 이름 숨기기':'🏷️ 어떤 성운일까? 이름 확인';b.setAttribute('aria-expanded',free.answer);document.getElementById('freeAnswer').hidden=!free.answer;updateFreeFeedback();};
+  document.getElementById('freeSelection').onchange=e=>selectFree(+e.target.value||null);
+  for(let i=0;i<3;i++)document.getElementById('freeAxis'+i).oninput=e=>{const o=free.objects.find(o=>o.id===free.selected);if(!o)return;o.p[i]=+e.target.value;syncFreeSelection();freeChanged(o.type!=='eye');};
+  document.getElementById('freeSize').oninput=e=>{const o=free.objects.find(o=>o.id===free.selected);if(!o)return;o.r=+e.target.value;syncFreeSelection();freeChanged();};
+  document.getElementById('freeDelete').onclick=()=>{free.objects=free.objects.filter(o=>o.id!==free.selected);free.selected=null;if(!free.objects.some(o=>String(o.id)===free.target))free.target='';freeChanged();renderFreePanel();};
+  const target=document.getElementById('freeTarget');target.value=free.target;target.onchange=e=>{free.target=e.target.value;freeChanged(false);};
+  document.getElementById('freeWall').onchange=e=>{free.wall=e.target.checked;freeChanged(false);};
+  const quality=document.getElementById('freeQuality');quality.value=free.quality;quality.onchange=e=>{free.quality=+e.target.value;freeChanged(false);};
+  const challenge=document.getElementById('freeChallenge');challenge.value=free.challenge;challenge.onchange=e=>{free.challenge=e.target.value;free.history.clear();document.getElementById('freeChallengeHint').textContent=freeChallenges.find(c=>c[0]===free.challenge)?.[2]||'별과 구름, 내 위치를 자유롭게 바꿔 보세요.';updateFreeFeedback();};
+  document.getElementById('freeChallengeHint').textContent=freeChallenges.find(c=>c[0]===free.challenge)?.[2]||'별과 구름, 내 위치를 자유롭게 바꿔 보세요.';
+  document.getElementById('freeLoad').onclick=()=>loadFreeScene(document.getElementById('freePreset').value);
+  document.getElementById('freePreset').value=free.preset||'horse';
+  document.getElementById('freeReset').onclick=()=>{free.won.clear();free.challenge='';loadFreeScene('start');};
+  syncFreeSelection();free.dirty=true;invalidate();
+}
+freeTools.onclick=e=>{
+  const b=e.target.closest('button');if(!b)return;
+  if(b.dataset.tool){const type=b.dataset.tool,eye=free.objects.find(o=>o.type==='eye');if(type==='eye'&&eye){free.tool='';freeTools.querySelectorAll('[data-tool]').forEach(b=>b.classList.remove('active'));selectFree(eye.id);freeMessageText('내 위치의 손잡이를 끌어 옮겨 보세요.');return;}free.tool=free.tool===type?'':type;freeTools.querySelectorAll('[data-tool]').forEach(b=>b.classList.toggle('active',b.dataset.tool===free.tool));freeMessageText(free.tool?freeNames[type]+'을 놓을 곳을 눌러 주세요.':'물체를 끌어 옮기거나 빈 곳을 끌어 돌려 보세요.');}
+  if(b.dataset.zoom){view.dist=clamp(view.dist*+b.dataset.zoom,12,65);invalidate();}
+  if(b.id==='freeViewReset'){view={...FREE_VIEW};invalidate();}
+};
+const panel = document.getElementById('panel');
+function render() {
+  document.querySelectorAll('#tabs button').forEach((b) => b.classList.toggle('on', +b.dataset.c === cur));
+  document.querySelector('main').classList.toggle('explore',cur===4);
+  freeTools.hidden=freeHelp.hidden=freeMessage.hidden=cur!==4;
+  inset.style.display = cur < 3 ? '' : 'none';
+  document.getElementById('hint').style.display = cur < 3 ? '' : 'none';
+  document.getElementById('resetView').style.display = cur < 3 ? '' : 'none';
+  document.getElementById('wait').style.display = state.earth ? 'none' : '';
+  invalidate();
+  if(cur===4){renderFreePanel();return;}
+  if (cur === 3) {
+    panel.innerHTML = `<h2>세 가지 성운 비교</h2>
+      <p>세 화면 모두 <b>지구에서 본 모습</b>이에요. 모두 가스·티끌(성간 물질)이 모인 구름인데, 별빛과 구름의 위치에 따라 다르게 보여요.</p>
+      <button class="btn ${state.name ? 'on' : ''}" id="bName">🏷️ 이름 보기</button>
+      ${CASES.map((c) => `<div class="name ${state.name ? 'show' : ''}" style="border-color:${c.col}"><div class="big" style="color:${c.col}">${c.name}</div>${c.def}</div>`).join('')}
+      <div class="note">이 화면은 원리를 보여 주는 모형이에요. 실제 크기와 거리, 색은 다를 수 있어요.</div>`;
+  } else {
+    const c = CASES[cur];
+    panel.innerHTML = `<h2>${['①', '②', '③'][cur]} ${c.tab}</h2>
+      <p>${c.setup}</p>
+      <div class="q"><b>예상해 보기</b> 지구에서는 이 구름이 어떻게 보일까요?
+        <div class="opts"><div>1. 붉게 빛난다</div><div>2. 파르스름하게 밝다</div><div>3. 검게 보인다</div></div></div>
+      <button class="btn ${state.earth ? 'on' : ''}" id="bEarth">🔭 지구에서 본 모습 보기</button>
+      <button class="btn ${state.rays ? 'on' : ''}" id="bRays">✨ 빛의 경로 보기</button>
+      ${state.rays ? `<div class="legend">${cur === 2 ? '노란 빛: 뒤쪽 별빛 · ✕: 구름에 가로막힘' : cur === 0 ? '흰 빛: 별빛 → 붉은 빛: 가스가 스스로 낸 빛' : '노란 빛: 별빛 → 파란 빛: 구름에 반사된 빛'}</div><p>${c.why}</p>` : ''}
+      <button class="btn ${state.name ? 'on' : ''}" id="bName">🏷️ 이름 보기</button>
+      <div class="name ${state.name ? 'show' : ''}" style="border-color:${c.col}"><div class="big" style="color:${c.col}">${c.name}</div>${c.def}<div class="legend">${c.ex}</div></div>
+      <div class="note">이 화면은 원리를 보여 주는 모형이에요. 실제 크기와 거리, 색은 다를 수 있어요.</div>`;
+    document.getElementById('bEarth').onclick = () => { state.earth = !state.earth; render(); };
+    document.getElementById('bRays').onclick = () => { state.rays = !state.rays; photons = []; render(); };
+  }
+  document.getElementById('bName').onclick = () => { state.name = !state.name; render(); };
+}
+function go(c) {
+  cur = c; state.earth = false; state.rays = false; state.name = false; photons = []; view = Object.assign({}, VIEW0);
+  history.replaceState(null, '', '#' + (c + 1));
+  if(cur===4){view={...FREE_VIEW};free.tool='';freeTools.querySelectorAll('[data-tool]').forEach(b=>b.classList.remove('active'));if(!free.objects.length)loadFreeScene('start');}
+  render();
+}
+document.querySelectorAll('#tabs button').forEach((b) => b.onclick = () => go(+b.dataset.c));
+document.getElementById('resetView').onclick = () => { view = Object.assign({}, VIEW0); invalidate(); };
+
+let drag = null;
+const pointers=new Map();let pinchDistance=0;
+function pointerGap(){const p=[...pointers.values()];return p.length===2?Math.hypot(p[0].x-p[1].x,p[0].y-p[1].y):0;}
+function freeUnproject(x,y,depth) {
+  const cam=freeStageCamera(),dpr=cv.width/cv.getBoundingClientRect().width;
+  return vadd(cam.pos,vadd(vmul(cam.f,depth),vadd(vmul(cam.r,(x*dpr-cv.width/2)*depth/cam.k),vmul(cam.u,-(y*dpr-cv.height/2)*depth/cam.k))));
+}
+stage.addEventListener('pointerdown', (e) => {
+  if(e.target.closest('.inset,.reset,.free-tools'))return;
+  e.preventDefault();stage.setPointerCapture(e.pointerId);pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  if(pointers.size>=2){drag=null;pinchDistance=pointerGap();return;}
+  const rect=cv.getBoundingClientRect(),x=e.clientX-rect.left,y=e.clientY-rect.top;
+  if(cur===4){
+    if(free.tool){
+      const type=free.tool,max=type==='cloud'?8:10,count=free.objects.filter(o=>type==='cloud'?o.type==='cloud':o.type==='hot'||o.type==='star').length;
+      if(type!=='eye'&&count>=max){freeMessageText('화면이 복잡해졌어요. 물체를 지우고 새로 놓아 보세요.');return;}
+      if(type==='eye'&&free.objects.some(o=>o.type==='eye'))return;
+      const cam=freeStageCamera(),depth=dot(vsub([0,0,0],cam.pos),cam.f),p=freeUnproject(x,y,depth).map((v,i)=>clamp(v,i===1?-9:-18,i===1?9:18));
+      const o=freeObject(type,p);free.selected=o.id;free.tool='';freeTools.querySelectorAll('[data-tool]').forEach(b=>b.classList.remove('active'));freeChanged();renderFreePanel();freeMessageText('손잡이를 끌어 옮겨 보세요. 앞뒤 위치도 바꿀 수 있어요.');return;
+    }
+    const hit=[...free.hits].reverse().find(h=>Math.hypot(x-h.x,y-h.y)<=h.r);
+    if(hit){selectFree(hit.id);free.interacting=true;const o=free.objects.find(o=>o.id===hit.id),cam=freeStageCamera(),depth=dot(vsub(o.p,cam.pos),cam.f);drag={x:e.clientX,y:e.clientY,id:o.id,depth,offset:vsub(o.p,freeUnproject(x,y,depth))};return;}
+  }
+  drag={x:e.clientX,y:e.clientY};
+});
+stage.addEventListener('pointermove', (e) => {
+  if(!pointers.has(e.pointerId))return;
+  pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  if(pointers.size>=2){const gap=pointerGap();if(gap&&pinchDistance)view.dist=clamp(view.dist*pinchDistance/gap,cur===4?12:10,65);pinchDistance=gap;invalidate();return;}
+  if (!drag) return;
+  if(cur===4&&drag.id){const o=free.objects.find(o=>o.id===drag.id);if(!o)return;const r=cv.getBoundingClientRect();o.p=vadd(freeUnproject(e.clientX-r.left,e.clientY-r.top,drag.depth),drag.offset).map((v,i)=>clamp(v,i===1?-9:-18,i===1?9:18));syncFreeSelection();freeChanged(o.type!=='eye');return;}
+  view.yaw -= (e.clientX - drag.x) * 0.006; view.pitch = Math.max(-1.3, Math.min(1.3, view.pitch + (e.clientY - drag.y) * 0.006));
+  drag = { x: e.clientX, y: e.clientY };
+  invalidate();
+});
+for(const event of ['pointerup','pointercancel','lostpointercapture'])stage.addEventListener(event,e=>{pointers.delete(e.pointerId);drag=null;pinchDistance=0;});
+document.addEventListener('pointerdown',e=>{if(cur===4&&e.target.matches('.free-controls input[type=range]'))free.interacting=true;});
+function finishFreeInteraction(){if(!free.interacting)return;free.interacting=false;freeChanged(free.objects.some(o=>o.grid&&o.grid.n<17));}
+document.addEventListener('pointerup',finishFreeInteraction);
+document.addEventListener('pointercancel',finishFreeInteraction);
+stage.addEventListener('wheel', (e) => { if(e.target.closest('.inset'))return;e.preventDefault(); view.dist = clamp(view.dist * (e.deltaY > 0 ? 1.08 : 0.93),cur===4?12:10,65);invalidate(); }, { passive: false });
+
+function readHash(){
+  const hp=location.hash.slice(1).split('&'),h=parseInt(hp[0],10);
+  go(h>=1&&h<=5?h-1:0);
+  if(hp.includes('e'))state.earth=true;if(hp.includes('r'))state.rays=true;if(hp.includes('n'))state.name=true;
+  if(cur<4)history.replaceState(null,'','#'+(cur+1)+['e','r','n'].filter((s,i)=>[state.earth,state.rays,state.name][i]).map(s=>'&'+s).join(''));
+  render();
+}
+window.addEventListener('hashchange',readHash);
+window.addEventListener('resize',()=>{free.dirty=true;invalidate();});
+new ResizeObserver(()=>{free.dirty=true;invalidate();}).observe(stage);
+document.addEventListener('visibilitychange',()=>{last=performance.now();if(!document.hidden)invalidate();});
+readHash();
+</script>
+</body>
+</html>
