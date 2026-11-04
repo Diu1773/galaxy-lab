@@ -82,6 +82,31 @@ button{touch-action:manipulation}
 @media(min-width:901px){body{height:100svh}header{flex:none}.explore .stage{min-height:0}}
 @media(max-width:1100px) and (min-width:901px){h1{font-size:17px}.tabs{gap:5px}.tabs button{padding:10px;font-size:13px}.explore{grid-template-columns:minmax(0,1fr) 330px}}
 @media(max-width:900px){body{height:auto}main,.explore{grid-template-columns:minmax(0,1fr)}header{padding:10px}.tabs{gap:5px}.tabs button{font-size:13px;padding:10px 12px}main{padding:0 10px 12px}.stage{height:58svh;min-height:370px}.explore aside{overflow:visible}.free-controls{overflow:visible}.eye-screen canvas{height:240px}.free-tools{gap:5px}.free-tools button{font-size:12px;padding:9px}.free-tools .zoom button{font-size:17px}.free-help{font-size:12px}.free-help b{font-size:15px}}
+.step{display:flex;align-items:center;gap:8px;font-weight:700;margin:12px 0 4px}
+.num{display:inline-flex;align-items:center;justify-content:center;flex:none;width:26px;height:26px;border-radius:50%;background:#0b0f2b;color:var(--gold);font-size:14px;font-weight:800}
+.btn .num{margin-right:8px;vertical-align:middle}
+.btn.on .num{background:#021d20;color:var(--teal)}
+.opts button{border:2px solid transparent;border-radius:10px;padding:10px 12px;min-height:46px;text-align:left;font-weight:700;color:var(--ink);background:#0b0f2b;cursor:pointer}
+.opts button.on{border-color:var(--gold);background:#2a2550}
+.btn{min-height:46px;margin:6px 0}
+aside p{margin:6px 0}
+.opts{gap:5px}
+.opts button{min-height:42px}
+.btn.ghost{background:transparent;border:1px solid #485385;text-align:center}
+.next{box-shadow:0 0 0 3px var(--gold);animation:nudge 1.6s ease-in-out infinite}
+@keyframes nudge{50%{box-shadow:0 0 0 6px rgba(244,185,66,.25)}}
+@media (prefers-reduced-motion:reduce){.next{animation:none}}
+.mine{font-size:13px;color:var(--gold);margin:4px 0 0}
+.cards{display:grid;gap:6px;margin:6px 0}
+.cards button{display:flex;align-items:center;gap:8px;border:2px solid transparent;border-radius:10px;padding:9px 10px;min-height:46px;text-align:left;font-weight:700;color:var(--ink);background:#1a2050;cursor:pointer}
+.cards button.on{border-color:var(--gold);background:#2a2550}
+.cards button .ok{margin-left:auto;color:#7be3c6}
+.scenes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:6px 0}
+.scenes button{border:0;border-radius:10px;padding:8px 4px;min-height:46px;font-size:13px;font-weight:700;color:var(--ink);background:#2a3060;cursor:pointer}
+.sec{font-size:13px;font-weight:800;color:var(--gold);margin:12px 0 2px}
+.selhead{display:flex;gap:6px;align-items:center}
+.selhead select{flex:1}
+.selhead button{flex:none;border:0;border-radius:8px;min-height:44px;padding:0 12px;color:var(--ink);background:#4a2338;font-weight:700;cursor:pointer}
 .sitehome{margin-left:auto;color:#eef0ff;text-decoration:none;font-weight:700;font-size:14px;padding:9px 14px;border-radius:999px;background:#1a2050;white-space:nowrap}
 @media (min-width:901px){body{display:flex;flex-direction:column}main{flex:1;min-height:0;height:auto}}
 </style>
@@ -179,7 +204,8 @@ const LIGHT = [
 const sky = [];
 for (let i = 0; i < 700; i++) {
   const th = R() * 2 * Math.PI, ph = Math.acos(2 * R() - 1), r = 70;
-  sky.push([r * Math.sin(ph) * Math.cos(th), r * Math.cos(ph), r * Math.sin(ph) * Math.sin(th), 0.3 + R() * 0.7]);
+  const a = 0.3 + R() * 0.7;
+  sky.push([r * Math.sin(ph) * Math.cos(th), r * Math.cos(ph), r * Math.sin(ph) * Math.sin(th), a, `rgba(255,255,255,${(a * 0.6).toFixed(3)})`]);
 }
 const wall = [];
 for (let i = 0; i < 4200; i++) {
@@ -213,13 +239,15 @@ function camera(pos, target, fov, w, h) {
   };
 }
 
-const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
+const cv = document.getElementById('cv'), ctx = cv.getContext('2d'), mctx = ctx;
+const layer = document.createElement('canvas'), lctx = layer.getContext('2d');
+let layerKey = '', insetKey = '', compKey = '';
 const cv2 = document.getElementById('cv2'), ctx2 = cv2.getContext('2d');
 const stage = document.getElementById('stage'), inset = document.getElementById('inset');
 const VIEW0 = { yaw: 0.85, pitch: 0.28, dist: 20, tx: 1.5, ty: -1.2, tz: 4.5 };
 let view = Object.assign({}, VIEW0);
 let cur = 0;
-const state = { earth: false, rays: false, name: false };
+const state = { earth: false, rays: false, name: false, pick: null };
 
 function fit(c) {
   const r = c.getBoundingClientRect(), dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -234,10 +262,20 @@ function drawScene(g, cam, ci, o) {
   g.globalCompositeOperation = 'source-over';
   for (const s of sky) {
     const q = cam.p(s); if (!q) continue;
-    g.fillStyle = `rgba(255,255,255,${s[3] * 0.6})`; g.fillRect(q[0], q[1], 1.3 * dpr, 1.3 * dpr);
+    g.fillStyle = s[4]; g.fillRect(q[0], q[1], 1.3 * dpr, 1.3 * dpr);
   }
   const items = [];
-  if (ci === 2) wall.forEach((s) => { const q = cam.p(s); if (q) items.push([q[2], 0, q, s]); });
+  const wallFirst = ci === 2 && cam.pos[2] > -8;
+  if (wallFirst) {
+    g.globalCompositeOperation = 'lighter';
+    g.fillStyle = '#fffaeb';
+    for (const s of wall) {
+      const q = cam.p(s); if (!q) continue;
+      g.globalAlpha = s[3];
+      if (s[4]) { const sz = 2.4 * dpr; g.drawImage(SPR.star, q[0] - sz * 2, q[1] - sz * 2, sz * 4, sz * 4); }
+      else { const sz = 1.6 * dpr; g.fillRect(q[0] - sz / 2, q[1] - sz / 2, sz, sz); }
+    }
+  } else if (ci === 2) wall.forEach((s) => { const q = cam.p(s); if (q) items.push([q[2], 0, q, s]); });
   cloud.forEach((p, i) => { const q = cam.p(p); if (q) items.push([q[2], 1, q, i]); });
   const st = STAR_POS[ci];
   if (st) { const q = cam.p(st); if (q) items.push([q[2] - 0.001, 2, q]); }
@@ -342,9 +380,15 @@ function frame(now) {
     const cp = Math.cos(view.pitch), tgt = [view.tx, view.ty, view.tz];
     const pos = [tgt[0] + view.dist * cp * Math.sin(view.yaw), tgt[1] + view.dist * Math.sin(view.pitch), tgt[2] + view.dist * cp * Math.cos(view.yaw)];
     const cam = camera(pos, tgt, 50 * Math.PI / 180, W, H);
-    drawScene(ctx, cam, cur, { dpr, earth: true });
-    const a = cam.p(EARTH), b = cam.p([0, 0, 0]);
-    if (a && b) { ctx.setLineDash([6 * dpr, 6 * dpr]); ctx.strokeStyle = 'rgba(44,177,188,.7)'; ctx.lineWidth = 1.5 * dpr; ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke(); ctx.setLineDash([]); }
+    const key = [cur, W, H, view.yaw, view.pitch, view.dist, view.tx, view.ty, view.tz].join(',');
+    if (key !== layerKey) {
+      if (layer.width !== W || layer.height !== H) { layer.width = W; layer.height = H; }
+      drawScene(lctx, cam, cur, { dpr, earth: true });
+      const a = cam.p(EARTH), b = cam.p([0, 0, 0]);
+      if (a && b) { lctx.setLineDash([6 * dpr, 6 * dpr]); lctx.strokeStyle = 'rgba(44,177,188,.7)'; lctx.lineWidth = 1.5 * dpr; lctx.beginPath(); lctx.moveTo(a[0], a[1]); lctx.lineTo(b[0], b[1]); lctx.stroke(); lctx.setLineDash([]); }
+      layerKey = key; compKey = '';
+    }
+    ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'copy'; ctx.drawImage(layer, 0, 0); ctx.globalCompositeOperation = 'source-over';
     if (state.rays) {
       acc += dt; const rate = cur === 2 ? 0.02 : 0.03;
       while (acc > rate) { acc -= rate; spawn(cur); }
@@ -355,10 +399,15 @@ function frame(now) {
     label(ctx, cam, EARTH, '🌍 지구', '#7fb2ff', 28, dpr);
     if (cur === 2) label(ctx, cam, [-12, 9, -11], '구름 뒤쪽의 별들', '#c9cce3', 0, dpr);
     if (state.earth) {
-      const d2 = fit(cv2);
-      drawScene(ctx2, eyeCam(cv2.width, cv2.height), cur, { dpr: d2, earth: false });
+      const d2 = fit(cv2), k2 = cur + ',' + cv2.width + ',' + cv2.height;
+      if (k2 !== insetKey) { drawScene(ctx2, eyeCam(cv2.width, cv2.height), cur, { dpr: d2, earth: false }); insetKey = k2; }
     }
   } else {
+    const key = [W, H, state.name].join(',');
+    if (key === compKey) { mctx.globalCompositeOperation = 'copy'; mctx.drawImage(layer, 0, 0); mctx.globalCompositeOperation = 'source-over'; return; }
+    compKey = key; layerKey = '';
+    if (layer.width !== W || layer.height !== H) { layer.width = W; layer.height = H; }
+    const ctx = lctx;
     ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, H);
     if(W/dpr<620){
       const rowH=H/3, imageW=Math.floor(W*.59), imageH=Math.floor(rowH-12*dpr);
@@ -382,6 +431,7 @@ function frame(now) {
       ctx.fillText(state.name ? CASES[i].name : ['① 별이 구름 안에', '② 별이 구름 옆에', '③ 별들이 구름 뒤에'][i], i * pw + pw / 2, y0 + ph + 10 * dpr);
     }
     }
+    mctx.globalCompositeOperation = 'copy'; mctx.drawImage(layer, 0, 0); mctx.globalCompositeOperation = 'source-over';
   }
   if (cur < 3 && state.rays && !document.hidden) invalidate();
 }
@@ -402,7 +452,7 @@ const freeTools = document.createElement('div'); freeTools.className = 'free-too
 freeTools.innerHTML = `<button data-tool="cloud">＋ 구름</button><button data-tool="hot">＋ 뜨거운 별</button><button data-tool="star">＋ 보통 별</button><button data-tool="eye">⊕ 내 위치</button><div class="zoom"><button data-zoom="0.85" aria-label="확대">＋</button><button data-zoom="1.18" aria-label="축소">−</button><button id="freeViewReset" aria-label="처음 시점으로">↺</button></div>`;
 stage.append(freeTools);
 const freeHelp = document.createElement('div'); freeHelp.className = 'free-help'; freeHelp.hidden = true;
-freeHelp.innerHTML = '<b>별빛과 구름의 놀이터</b><span>동그란 손잡이를 끌어 옮겨요 · 빈 곳을 끌면 돌아가요</span><span>휠·두 손가락·＋ −로 확대해요 · 앞뒤는 조절 막대로 바꿔요</span>';
+freeHelp.innerHTML = '<b>별빛과 구름의 놀이터</b><span>아래 단추로 구름·별을 놓고, 동그란 손잡이를 끌어 옮겨요</span><span>빈 곳을 끌면 돌아가요 · ＋ −로 확대해요 · 앞뒤는 ‘고른 물체’ 막대로</span>';
 stage.append(freeHelp);
 const freeMessage = document.createElement('div'); freeMessage.className = 'free-message'; freeMessage.hidden = true; freeMessage.setAttribute('role', 'status'); stage.append(freeMessage);
 const vsub = (a, b) => a.map((v, i) => v - b[i]);
@@ -517,6 +567,7 @@ function sampleFreeCloud(o, p, out) {
   return out[0]-before;
 }
 const freeWall = Array.from({length:1300},()=>[(R()-0.5)*65,(R()-0.5)*38,-25,0.3+R()*0.7]);
+freeWall.forEach(s=>{s[4]=`rgba(210,218,255,${s[3].toFixed(3)})`;s[5]=`rgba(170,183,240,${(s[3]*.7).toFixed(3)})`;});
 function freeTarget(eye) {
   const clouds=free.objects.filter(o=>o.type==='cloud');
   const chosen=clouds.find(o=>String(o.id)===free.target);
@@ -541,28 +592,31 @@ function drawFreeEye() {
   if(free.wall) {
     for(const s of freeWall) {
       const p=cam.p(s);if(!p)continue;
-      freeCtx.fillStyle=`rgba(210,218,255,${s[3]})`;freeCtx.fillRect(p[0],p[1],s[3]>.85?1.5:0.8,s[3]>.85?1.5:0.8);
+      freeCtx.fillStyle=s[4];freeCtx.fillRect(p[0],p[1],s[3]>.85?1.5:0.8,s[3]>.85?1.5:0.8);
     }
     const a=cam.p([-32,0,-25]),b=cam.p([32,0,-25]);
     if(a&&b){const mid=(a[1]+b[1])/2,grad=freeCtx.createLinearGradient(0,mid-h*.42,0,mid+h*.42);grad.addColorStop(0,'rgba(96,103,149,0)');grad.addColorStop(.5,'rgba(96,103,149,.3)');grad.addColorStop(1,'rgba(96,103,149,0)');freeCtx.strokeStyle=grad;freeCtx.lineWidth=h*.84;freeCtx.lineCap='round';freeCtx.beginPath();freeCtx.moveTo(a[0],a[1]);freeCtx.lineTo(b[0],b[1]);freeCtx.stroke();}
   }
   const image=freeCtx.getImageData(0,0,w,h), pixels=image.data, stats={red:0,blue:0,dark:0,horse:0};
+  const F=cam.f,Rr=cam.r,U=cam.u,K=cam.k,E=eye.p,nc=clouds.length,segLo=new Float64Array(nc),segHi=new Float64Array(nc),segO=new Array(nc),bounds=clouds.map(o=>cloudBound(o)**2);
+  const p=[0,0,0], out=[0,0,0];
   for(let y=0;y<h;y++) for(let x=0;x<w;x++) {
-    const dir=vadd(cam.f,vadd(vmul(cam.r,(x+0.5-w/2)/cam.k),vmul(cam.u,-(y+0.5-h/2)/cam.k)));
-    const len=Math.hypot(...dir);dir[0]/=len;dir[1]/=len;dir[2]/=len;
-    const segments=[];
-    for(const o of clouds){const ab=sphereInterval(eye.p,dir,o);if(ab&&ab[1]>.05)segments.push({o,lo:Math.max(.05,ab[0]),hi:ab[1]});}
-    if(!segments.length) continue;
-    const lo=Math.min(...segments.map(s=>s.lo)),hi=Math.max(...segments.map(s=>s.hi)),step=Math.min(.27,(hi-lo)/20);
+    const sx=(x+0.5-w/2)/K, sy=-(y+0.5-h/2)/K;
+    let d0=F[0]+Rr[0]*sx+U[0]*sy, d1=F[1]+Rr[1]*sx+U[1]*sy, d2=F[2]+Rr[2]*sx+U[2]*sy;
+    const len=Math.hypot(d0,d1,d2);d0/=len;d1/=len;d2/=len;
+    let ns=0,lo=Infinity,hi=-Infinity;
+    for(let c=0;c<nc;c++){const o=clouds[c],vx=E[0]-o.p[0],vy=E[1]-o.p[1],vz=E[2]-o.p[2],b=vx*d0+vy*d1+vz*d2,q=b*b-(vx*vx+vy*vy+vz*vz)+bounds[c];
+      if(q<=0)continue;const rt=Math.sqrt(q),sh=-b+rt;if(sh<=.05)continue;const sl=Math.max(.05,-b-rt);segO[ns]=o;segLo[ns]=sl;segHi[ns]=sh;ns++;if(sl<lo)lo=sl;if(sh>hi)hi=sh;}
+    if(!ns) continue;
+    const step=Math.min(.27,(hi-lo)/20);
     const j=(y*w+x)*4;let cr=pixels[j]/255,cg=pixels[j+1]/255,cb=pixels[j+2]/255,red=0,blue=0,dark=0,horse=0,backSource=Math.max(cr,cg,cb)>.06?0:null;
-    const p=[0,0,0], out=[0,0,0];
     for(let t=hi-step*.5;t>=lo;t-=step) {
-      p[0]=eye.p[0]+dir[0]*t;p[1]=eye.p[1]+dir[1]*t;p[2]=eye.p[2]+dir[2]*t;
+      p[0]=E[0]+d0*t;p[1]=E[1]+d1*t;p[2]=E[2]+d2*t;
       out[0]=out[1]=out[2]=0;
       let owner=null,largest=0;
-      for(const s of segments)if(t>=s.lo&&t<=s.hi){const amount=sampleFreeCloud(s.o,p,out)||0;if(amount>largest){largest=amount;owner=s.o.id;}}
+      for(let c=0;c<ns;c++)if(t>=segLo[c]&&t<=segHi[c]){const amount=sampleFreeCloud(segO[c],p,out)||0;if(amount>largest){largest=amount;owner=segO[c].id;}}
       const den=out[0];if(den<.001)continue;
-      const a=1-Math.exp(-den*step*2.6),e=out[1]/den,b=out[2]/den,lum=Math.max(cr,cg,cb);
+      const a=1-Math.exp(-den*step*2.6),e=out[1]/den,b=out[2]/den,lum=cr>cg?(cr>cb?cr:cb):(cg>cb?cg:cb);
       const shadow=e+b<.12&&(backSource===0||(backSource!==null&&backSource!==owner)) ? lum*a : 0;
       dark=dark*(1-a)+shadow;
       horse=horse*(1-a)+(red>.1&&shadow>.001?shadow:0);
@@ -611,6 +665,7 @@ function updateFreeFeedback() {
   const success={red:kinds.red,blue:kinds.blue,horse:kinds.horse,move:moved,all:kinds.red&&kinds.blue&&kinds.dark};
   if(eye&&!free.interacting&&free.challenge&&success[free.challenge])free.won.add(free.challenge);
   const result=document.getElementById('freeResult');if(result)result.textContent=free.won.has(free.challenge)?'✦ 해냈어요! 다른 배치도 찾아볼까요?':'';
+  document.querySelectorAll('#freeCards [data-ch]').forEach(x=>{const ok=x.querySelector('.ok');if(ok)ok.textContent=free.won.has(x.dataset.ch)?'✓':'';});
 }
 function freeStageCamera() {
   const cp=Math.cos(view.pitch),t=[view.tx,view.ty,view.tz];
@@ -623,7 +678,7 @@ function drawFree(dpr) {
   for(let n=-12;n<=12;n+=3)for(const ends of [[[n,-3,-12],[n,-3,18]],[[-12,-3,n],[12,-3,n]]]) {
     const a=cam.p(ends[0]),b=cam.p(ends[1]);if(!a||!b)continue;ctx.beginPath();ctx.moveTo(a[0],a[1]);ctx.lineTo(b[0],b[1]);ctx.stroke();
   }
-  if(free.wall)for(let i=0;i<freeWall.length;i+=2){const s=freeWall[i],q=cam.p(s);if(q){ctx.fillStyle=`rgba(170,183,240,${s[3]*.7})`;ctx.fillRect(q[0],q[1],1.5*dpr,1.5*dpr);}}
+  if(free.wall)for(let i=0;i<freeWall.length;i+=2){const s=freeWall[i],q=cam.p(s);if(q){ctx.fillStyle=s[5];ctx.fillRect(q[0],q[1],1.5*dpr,1.5*dpr);}}
   const items=[];
   for(const o of free.objects) {
     if(o.type==='cloud')for(const p of o.dots){const q=cam.p(p.p);if(q)items.push({o,p,q});}
@@ -633,11 +688,12 @@ function drawFree(dpr) {
   for(const {o,p,q} of items) {
     const sz=clamp(cam.k*(p?o.r*.3:.35)/q[2],3*dpr,100*dpr);
     if(p){
-      ctx.globalCompositeOperation='source-over';ctx.globalAlpha=.16*p.den;ctx.drawImage(SPR.dark,q[0]-sz,q[1]-sz,sz*2,sz*2);
+      const x0=q[0]-sz,y0=q[1]-sz,s2=sz*2,ar=clamp(p.light[0]*p.den*.2,0,.5),ab=clamp(p.light[1]*p.den*.25,0,.5);
+      ctx.globalCompositeOperation='source-over';ctx.globalAlpha=.16*p.den;ctx.drawImage(SPR.dark,x0,y0,s2,s2);
       ctx.globalCompositeOperation='lighter';
-      ctx.globalAlpha=.06*p.den;ctx.drawImage(freeMist,q[0]-sz,q[1]-sz,sz*2,sz*2);
-      ctx.globalAlpha=clamp(p.light[0]*p.den*.2,0,.5);ctx.drawImage(SPR.red,q[0]-sz,q[1]-sz,sz*2,sz*2);
-      ctx.globalAlpha=clamp(p.light[1]*p.den*.25,0,.5);ctx.drawImage(SPR.blue,q[0]-sz,q[1]-sz,sz*2,sz*2);
+      ctx.globalAlpha=.06*p.den;ctx.drawImage(freeMist,x0,y0,s2,s2);
+      if(ar>.004){ctx.globalAlpha=ar;ctx.drawImage(SPR.red,x0,y0,s2,s2);}
+      if(ab>.004){ctx.globalAlpha=ab;ctx.drawImage(SPR.blue,x0,y0,s2,s2);}
     }else{ctx.globalCompositeOperation='lighter';ctx.globalAlpha=1;ctx.drawImage(o.type==='eye'?SPR.earth:o.type==='hot'?SPR.hot:SPR.star,q[0]-sz*2,q[1]-sz*2,sz*4,sz*4);}
   }
   ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over';free.hits=[];
@@ -662,36 +718,44 @@ function syncFreeSelection() {
   for(let i=0;i<3;i++){document.getElementById('freeAxis'+i).value=o.p[i];document.getElementById('freeAxisOut'+i).value=o.p[i].toFixed(1);}
   document.getElementById('freeSizeRow').hidden=o.type!=='cloud';document.getElementById('freeSize').value=o.r;document.getElementById('freeSizeOut').value=o.r.toFixed(1);
 }
+const SCENES=[['horse','말머리 성운'],['triple','삼렬 성운'],['cluster','플레이아데스']];
+function challengeHint(){return freeChallenges.find(c=>c[0]===free.challenge)?.[2]||'도전 카드를 하나 골라 보거나, 별과 구름을 마음대로 옮겨 보세요.';}
 function renderFreePanel() {
   const panel=document.getElementById('panel'), option=o=>`<option value="${o.id}">${freeNames[o.type]}${o.type==='eye'?'':' '+o.id}</option>`;
   panel.innerHTML=`<div class="eye-screen"><h2>🔭 내 위치에서 본 모습</h2><canvas id="freeEye" role="img" aria-label="내 위치에서 본 구름과 별. 물체를 옮기면 모습이 바뀝니다."></canvas></div>
-    <div class="eye-caption">초록 점선 방향을 바라봐요 · 물체를 옮기며 비교해요</div>
+    <div class="eye-caption">점선 방향을 바라봐요 · 물체를 옮기면 바로 바뀌어요</div>
     <div class="free-controls">
+    <div class="sec">✦ 도전 카드 · 하나 골라 해 보기</div>
+    <div class="cards" id="freeCards">${freeChallenges.map((c,i)=>`<button data-ch="${c[0]}" class="${free.challenge===c[0]?'on':''}" aria-pressed="${free.challenge===c[0]}"><span class="num">${i+1}</span>${c[1]}<span class="ok">${free.won.has(c[0])?'✓':''}</span></button>`).join('')}</div>
+    <p id="freeChallengeHint" class="eye-caption"></p><div id="freeResult" class="challenge-result" role="status"></div>
     <button class="btn" id="freeReveal" aria-expanded="${free.answer}">${free.answer?'🏷️ 이름 숨기기':'🏷️ 어떤 성운일까? 이름 확인'}</button><div id="freeAnswer" class="free-answer" ${free.answer?'':'hidden'} aria-live="polite"></div>
-    <div class="scene-picker"><select id="freePreset" aria-label="미리 만든 장면"><option value="horse">말머리성운처럼</option><option value="triple">삼렬 성운처럼</option><option value="cluster">플레이아데스처럼</option></select><button id="freeLoad">불러오기</button></div>
-    <label for="freeSelection">옮길 물체 고르기</label><select id="freeSelection"><option value="">물체를 골라 주세요</option>${free.objects.map(option).join('')}</select>
-    <div id="freeSelected"><div class="eye-caption">손잡이를 끌거나 아래 막대로 옮겨요</div>
-    ${['좌우','위아래','앞뒤'].map((s,i)=>`<label class="axis-control"><span>${s}</span><input id="freeAxis${i}" type="range" min="${i===1?-9:-18}" max="${i===1?9:18}" step="0.2" aria-label="${s} 위치"><output id="freeAxisOut${i}"></output></label>`).join('')}
+    <div class="sec">🖼️ 실제 성운처럼 꾸며 둔 장면</div>
+    <div class="scenes">${SCENES.map(([k,t])=>`<button data-scene="${k}">${t}</button>`).join('')}</div>
+    <div class="sec">✋ 고른 물체</div>
+    <div class="selhead"><select id="freeSelection" aria-label="옮길 물체 고르기"><option value="">화면에서 손잡이를 눌러 골라요</option>${free.objects.map(option).join('')}</select><button id="freeDelete" aria-label="고른 물체 지우기">지우기</button></div>
+    <div id="freeSelected"><div class="eye-caption">손잡이를 끌면 좌우·위아래로 움직여요</div>
+    <label class="axis-control"><span>앞뒤</span><input id="freeAxis2" type="range" min="-18" max="18" step="0.2" aria-label="앞뒤 위치"><output id="freeAxisOut2"></output></label>
     <label class="axis-control" id="freeSizeRow"><span>구름 크기</span><input id="freeSize" type="range" min="0.7" max="5" step="0.1"><output id="freeSizeOut"></output></label>
-    <button class="btn" id="freeDelete">선택한 물체 지우기</button></div>
+    <details><summary>막대로 옮기기 (좌우·위아래)</summary>
+    ${['좌우','위아래'].map((t,i)=>`<label class="axis-control"><span>${t}</span><input id="freeAxis${i}" type="range" min="${i===1?-9:-18}" max="${i===1?9:18}" step="0.2" aria-label="${t} 위치"><output id="freeAxisOut${i}"></output></label>`).join('')}</details></div>
     <details><summary>바라볼 곳 · 배경 · 그리기</summary><label for="freeTarget">바라볼 곳</label><select id="freeTarget"><option value="">구름들이 있는 가운데</option>${free.objects.filter(o=>o.type==='cloud').map(option).join('')}</select>
     <p><label><input type="checkbox" id="freeWall" ${free.wall?'checked':''}> 뒤쪽 별 무리 켜기</label></p>
     <label for="freeQuality">그리기</label><select id="freeQuality"><option value="156">가볍게 (느린 기기)</option><option value="220">더 자세하게</option></select></details>
-    <details open><summary>✦ 도전 카드</summary><select id="freeChallenge" aria-label="도전 카드 고르기"><option value="">마음대로 탐구하기</option>${freeChallenges.map(c=>`<option value="${c[0]}">${c[1]}</option>`).join('')}</select><p id="freeChallengeHint" class="eye-caption"></p><div id="freeResult" class="challenge-result" role="status"></div></details>
-    <button class="btn" id="freeReset">↺ 처음 상태로 되돌리기</button><div class="eye-caption">장면을 불러오거나 되돌리면 지금 배치가 바뀌어요.</div>
+    <button class="btn ghost" id="freeReset">↺ 처음 상태로 되돌리기</button><div class="eye-caption">장면을 고르거나 되돌리면 지금 배치가 바뀌어요.</div>
     <div class="note">성간 물질: 별과 별 사이의 가스와 티끌<br>이 화면은 원리를 보여 주는 모형이에요. 실제 크기와 거리, 색은 다를 수 있어요.</div></div>`;
   document.getElementById('freeReveal').onclick=()=>{free.answer=!free.answer;const b=document.getElementById('freeReveal');b.textContent=free.answer?'🏷️ 이름 숨기기':'🏷️ 어떤 성운일까? 이름 확인';b.setAttribute('aria-expanded',free.answer);document.getElementById('freeAnswer').hidden=!free.answer;updateFreeFeedback();};
   document.getElementById('freeSelection').onchange=e=>selectFree(+e.target.value||null);
   for(let i=0;i<3;i++)document.getElementById('freeAxis'+i).oninput=e=>{const o=free.objects.find(o=>o.id===free.selected);if(!o)return;o.p[i]=+e.target.value;syncFreeSelection();freeChanged(o.type!=='eye');};
   document.getElementById('freeSize').oninput=e=>{const o=free.objects.find(o=>o.id===free.selected);if(!o)return;o.r=+e.target.value;syncFreeSelection();freeChanged();};
-  document.getElementById('freeDelete').onclick=()=>{free.objects=free.objects.filter(o=>o.id!==free.selected);free.selected=null;if(!free.objects.some(o=>String(o.id)===free.target))free.target='';freeChanged();renderFreePanel();};
+  document.getElementById('freeDelete').onclick=()=>{if(!free.selected)return;free.objects=free.objects.filter(o=>o.id!==free.selected);free.selected=null;if(!free.objects.some(o=>String(o.id)===free.target))free.target='';freeChanged();renderFreePanel();};
   const target=document.getElementById('freeTarget');target.value=free.target;target.onchange=e=>{free.target=e.target.value;freeChanged(false);};
   document.getElementById('freeWall').onchange=e=>{free.wall=e.target.checked;freeChanged(false);};
   const quality=document.getElementById('freeQuality');quality.value=free.quality;quality.onchange=e=>{free.quality=+e.target.value;freeChanged(false);};
-  const challenge=document.getElementById('freeChallenge');challenge.value=free.challenge;challenge.onchange=e=>{free.challenge=e.target.value;free.history.clear();document.getElementById('freeChallengeHint').textContent=freeChallenges.find(c=>c[0]===free.challenge)?.[2]||'별과 구름, 내 위치를 자유롭게 바꿔 보세요.';updateFreeFeedback();};
-  document.getElementById('freeChallengeHint').textContent=freeChallenges.find(c=>c[0]===free.challenge)?.[2]||'별과 구름, 내 위치를 자유롭게 바꿔 보세요.';
-  document.getElementById('freeLoad').onclick=()=>loadFreeScene(document.getElementById('freePreset').value);
-  document.getElementById('freePreset').value=free.preset||'horse';
+  document.getElementById('freeCards').onclick=e=>{const b=e.target.closest('[data-ch]');if(!b)return;free.challenge=free.challenge===b.dataset.ch?'':b.dataset.ch;free.history.clear();
+    document.querySelectorAll('#freeCards [data-ch]').forEach(x=>{x.classList.toggle('on',x.dataset.ch===free.challenge);x.setAttribute('aria-pressed',x.dataset.ch===free.challenge);});
+    document.getElementById('freeChallengeHint').textContent=challengeHint();updateFreeFeedback();};
+  document.getElementById('freeChallengeHint').textContent=challengeHint();
+  panel.querySelectorAll('[data-scene]').forEach(b=>b.onclick=()=>loadFreeScene(b.dataset.scene));
   document.getElementById('freeReset').onclick=()=>{free.won.clear();free.challenge='';loadFreeScene('start');};
   syncFreeSelection();free.dirty=true;invalidate();
 }
@@ -717,26 +781,34 @@ function render() {
       <p>세 화면 모두 <b>지구에서 본 모습</b>이에요. 모두 가스·티끌(성간 물질)이 모인 구름인데, 별빛과 구름의 위치에 따라 다르게 보여요.</p>
       <button class="btn ${state.name ? 'on' : ''}" id="bName">🏷️ 이름 보기</button>
       ${CASES.map((c) => `<div class="name ${state.name ? 'show' : ''}" style="border-color:${c.col}"><div class="big" style="color:${c.col}">${c.name}</div>${c.def}</div>`).join('')}
+      <button class="btn ghost" id="bNext">다음: ⑤ 자유 탐구 → 직접 만들어 보기</button>
       <div class="note">이 화면은 원리를 보여 주는 모형이에요. 실제 크기와 거리, 색은 다를 수 있어요.</div>`;
+    document.getElementById('bNext').onclick = () => go(4);
   } else {
-    const c = CASES[cur];
+    const c = CASES[cur], OPTS = ['붉게 빛난다', '파르스름하게 밝다', '검게 보인다'];
+    const nx = state.pick === null ? 'pick' : !state.earth ? 'earth' : !state.rays ? 'rays' : !state.name ? 'name' : 'next';
+    const nextTab = cur < 2 ? `${['②', '③'][cur]} ${CASES[cur + 1].tab}` : '④ 세 가지 비교';
     panel.innerHTML = `<h2>${['①', '②', '③'][cur]} ${c.tab}</h2>
       <p>${c.setup}</p>
-      <div class="q"><b>예상해 보기</b> 지구에서는 이 구름이 어떻게 보일까요?
-        <div class="opts"><div>1. 붉게 빛난다</div><div>2. 파르스름하게 밝다</div><div>3. 검게 보인다</div></div></div>
-      <button class="btn ${state.earth ? 'on' : ''}" id="bEarth">🔭 지구에서 본 모습 보기</button>
-      <button class="btn ${state.rays ? 'on' : ''}" id="bRays">✨ 빛의 경로 보기</button>
+      <div class="step"><span class="num">1</span>예상해 보기: 지구에서는 이 구름이 어떻게 보일까요?</div>
+      <div class="opts ${nx === 'pick' ? 'next' : ''}" style="border-radius:12px">${OPTS.map((t, i) => `<button data-pick="${i}" class="${state.pick === i ? 'on' : ''}" aria-pressed="${state.pick === i}">${i + 1}. ${t}</button>`).join('')}</div>
+      <button class="btn ${state.earth ? 'on' : ''} ${nx === 'earth' ? 'next' : ''}" id="bEarth"><span class="num">2</span>🔭 지구에서 본 모습 보기</button>
+      ${state.earth && state.pick !== null ? `<p class="mine">내 예상: ${state.pick + 1}. ${OPTS[state.pick]} · 오른쪽 아래 화면과 비교해 보세요.</p>` : ''}
+      <button class="btn ${state.rays ? 'on' : ''} ${nx === 'rays' ? 'next' : ''}" id="bRays"><span class="num">3</span>✨ 빛의 경로 보기</button>
       ${state.rays ? `<div class="legend">${cur === 2 ? '노란 빛: 뒤쪽 별빛 · ✕: 구름에 가로막힘' : cur === 0 ? '흰 빛: 별빛 → 붉은 빛: 가스가 스스로 낸 빛' : '노란 빛: 별빛 → 파란 빛: 구름에 반사된 빛'}</div><p>${c.why}</p>` : ''}
-      <button class="btn ${state.name ? 'on' : ''}" id="bName">🏷️ 이름 보기</button>
+      <button class="btn ${state.name ? 'on' : ''} ${nx === 'name' ? 'next' : ''}" id="bName"><span class="num">4</span>🏷️ 이름 보기</button>
       <div class="name ${state.name ? 'show' : ''}" style="border-color:${c.col}"><div class="big" style="color:${c.col}">${c.name}</div>${c.def}<div class="legend">${c.ex}</div></div>
-      <div class="note">이 화면은 원리를 보여 주는 모형이에요. 실제 크기와 거리, 색은 다를 수 있어요.</div>`;
+      <button class="btn ghost ${nx === 'next' ? 'next' : ''}" id="bNext">다음: ${nextTab} →</button>
+      <div class="note">화면을 끌면 돌아가요 · 휠이나 두 손가락으로 확대해요<br>이 화면은 원리를 보여 주는 모형이에요. 실제 크기와 거리, 색은 다를 수 있어요.</div>`;
+    panel.querySelectorAll('[data-pick]').forEach((b) => b.onclick = () => { state.pick = +b.dataset.pick; render(); });
     document.getElementById('bEarth').onclick = () => { state.earth = !state.earth; render(); };
     document.getElementById('bRays').onclick = () => { state.rays = !state.rays; photons = []; render(); };
+    document.getElementById('bNext').onclick = () => go(cur + 1);
   }
   document.getElementById('bName').onclick = () => { state.name = !state.name; render(); };
 }
 function go(c) {
-  cur = c; state.earth = false; state.rays = false; state.name = false; photons = []; view = Object.assign({}, VIEW0);
+  cur = c; state.earth = false; state.rays = false; state.name = false; state.pick = null; photons = []; view = Object.assign({}, VIEW0);
   history.replaceState(null, '', '#' + (c + 1));
   if(cur===4){view={...FREE_VIEW};free.tool='';freeTools.querySelectorAll('[data-tool]').forEach(b=>b.classList.remove('active'));if(!free.objects.length)loadFreeScene('start');}
   render();
