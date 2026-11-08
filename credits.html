@@ -10,7 +10,7 @@
 :root{--bg:#070a1f;--panel:#11163a;--panel2:#1a2050;--line:#2c3478;--ink:#eef0ff;--muted:#a3abdf;--gold:#f4b942;--violet:#7f5af0;--teal:#2cb1bc;--coral:#e4572e}
 *{box-sizing:border-box}
 html,body{margin:0;min-height:100%;background:var(--bg);color:var(--ink);font-family:"Malgun Gothic","Apple SD Gothic Neo","Noto Sans KR",sans-serif;-webkit-tap-highlight-color:transparent}
-body{background:radial-gradient(ellipse at 50% -10%,#1b2163 0%,var(--bg) 62%) fixed}
+body{background:transparent}body::before{content:'';position:fixed;inset:0;z-index:-1;background:linear-gradient(rgba(5,8,24,.55),rgba(5,8,24,.8)),url(hubble_img/bg.jpg) center/cover no-repeat}body::after{content:'배경: 용골자리 성운 · NASA, ESA, CSA, STScI';position:fixed;right:10px;bottom:6px;font-size:11px;color:#aab}
 a{color:var(--teal)}
 .wrap{max-width:1100px;margin:0 auto;padding:clamp(14px,3vw,30px)}
 .hero{text-align:center;padding:4px 0 10px}

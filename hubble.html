@@ -47,8 +47,6 @@ input{font:inherit;color:var(--ink);background:#0c112e;border:2px solid var(--li
 .galaxy-card .name{display:block;text-align:left;font-size:17px;line-height:1.35}
 .galaxy-card .data{font-size:18px;line-height:1.4;border:0;padding:0}
 .hero-art .galaxy-photo{width:132px;height:132px}.challenge-card .galaxy-photo{width:112px;height:112px}
-.slope-question{margin-top:22px}.slope-question label{display:block;margin-bottom:10px}
-#slopeActivity .graph-wrap{position:static}
 @media(min-width:1001px) and (max-width:1599px) and (max-height:850px){
   body:not(.board) .data-stage{margin-top:16px}body:not(.board) .data-stage h1{font-size:26px;margin-bottom:12px}
   body:not(.board) .data-stage .galaxy-card{min-height:80px;grid-template-columns:64px minmax(0,1fr)}
@@ -63,6 +61,8 @@ input{font:inherit;color:var(--ink);background:#0c112e;border:2px solid var(--li
   .challenge-card .galaxy-photo{width:80px;height:80px}
 }
 .board .galaxy-card .name{font-size:22px}.board .galaxy-card .data{font-size:28px}
+html{background:#050818}body{background:transparent!important}
+body::before{content:'';position:fixed;inset:0;z-index:-1;background:linear-gradient(rgba(5,8,24,.70),rgba(5,8,24,.84)),url(hubble_img/bg.jpg) center/cover no-repeat}
 .sitehome{margin-left:auto;color:#eef0ff;text-decoration:none;font-weight:700;font-size:14px;padding:9px 14px;border-radius:999px;background:#1a2050;white-space:nowrap}
 @media (min-width:901px){body{display:flex;flex-direction:column}main{flex:1;min-height:0;height:auto}}
 </style>
@@ -98,7 +98,7 @@ const GALAXIES = [
   {id:'ngc6041', name:'NGC 6041 (헤르쿨레스자리 은하단)', distance:4.7, speed:10500, shape:'타원'},
   {id:'m31', name:'안드로메다은하', distance:0.025, speed:-300, shape:'나선'}
 ];
-const CREDITS = [
+const CREDITS = ['배경 사진(용골자리 성운): NASA, ESA, CSA, STScI (퍼블릭 도메인)',
   'M87: NASA, STScI, WikiSky (퍼블릭 도메인)',
   'NGC 4696: NASA, ESA/Hubble, A. Fabian (CC BY 4.0)',
   'NGC 1275: NASA, ESA, Hubble Heritage (STScI/AURA)-ESA/Hubble Collaboration (퍼블릭 도메인)',
@@ -122,7 +122,7 @@ const number = n => n.toLocaleString('ko-KR');
 let state, step = 0, frame = 0, revision = 0, busy = false, scenePositions = [];
 let order = [];
 function resetState(){
-  state = {guess:null, skippedGuess:false, seen:new Set(), rule1:false, rule2:false, predictions:['',''], grown:false, growth:1, modelAnswer:false, visits:new Set(), observer:null, expansion:1, centerAnswer:false, challenge:false, slopeAnswers:['',''], slopeDone:[false,false]};
+  state = {guess:null, skippedGuess:false, seen:new Set(), rule1:false, rule2:false, predictions:['',''], grown:false, growth:1, modelAnswer:false, visits:new Set(), observer:null, expansion:1, centerAnswer:false, challenge:false, extensionAnswer:null};
   order = [...sample];
   for(let i=order.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[order[i],order[j]]=[order[j],order[i]];}
   if(order.every((g,i)=>g===sample[i])) order.push(order.shift());
@@ -139,32 +139,10 @@ function galaxyDiagram(g){
 function galaxyPhoto(g){
   return `<span class="galaxy-photo">${galaxyDiagram(g)}<img src="hubble_img/${g.id}.jpg" alt="${esc(shortName(g))} 실제 사진" width="360" height="360" onerror="this.hidden=true;this.previousElementSibling.removeAttribute('aria-hidden')" onload="this.previousElementSibling.setAttribute('aria-hidden','true')"></span>`;
 }
-function slopeActivity(){
-  const questions=['1억 광년 멀어질 때마다 빠르기는 1초에 약 몇 km씩 늘어날까요? (10500 ÷ 4.7)','8억 광년 떨어진 은하는 1초에 약 몇 km씩 멀어질까요?'];
-  return `<section class="challenge panel" id="slopeActivity"><h2>심화: 그래프의 기울기로 빠르기 구하기</h2><p>기울기는 가로로 1 갈 때 세로로 얼마나 올라가는지를 나타내요.</p><p>원점과 맨 끝 점(4.7억 광년, 10500 km)을 살펴봐요.</p><div class="graph-wrap"><svg class="graph" role="img" aria-label="다섯 은하와 원점에서 맨 끝 점으로 그은 직선, 원점과 4.7억 광년의 점을 강조한 그래프"></svg></div>${questions.map((q,i)=>`<form class="slope-question" data-slope="${i}" ${i===1&&!state.slopeDone[0]?'hidden':''}><label for="slopeAnswer${i}">${q}</label><div class="key-row"><input id="slopeAnswer${i}" inputmode="numeric" autocomplete="off" value="${esc(state.slopeAnswers[i])}" ${state.slopeDone[i]?'readonly':''} aria-describedby="slopeFeedback${i}"><button type="submit" ${state.slopeDone[i]?'disabled':''}>확인해요</button></div><p id="slopeFeedback${i}" class="${state.slopeDone[i]?'success':'feedback'}" role="status">${state.slopeDone[i]?slopeMessages[i]:''}</p></form>`).join('')}<div class="worksheet">활동지 심화 칸에 적어요</div></section>`;
+function extensionActivity(){
+  const correct=state.extensionAnswer===0;
+  return `<section class="challenge panel" id="extensionActivity"><h2>심화 질문</h2><p>표에 없는 은하가 8억 광년 떨어져 있어요. NGC 6041(4.7억 광년)과 비교하면 어떻게 멀어질까요?</p>${options(guesses,'extensionAnswer',correct,0)}<p id="extensionFeedback" class="${correct?'success':'feedback'}" role="status">${correct?'맞아요. 멀리 있는 은하일수록 더 빠르게 멀어져요. 그래프에서 오른쪽으로 갈수록 점이 위로 올라갔죠.':state.extensionAnswer!==null?'그래프에서 오른쪽으로 갈수록 점이 어디로 갔는지 떠올려 볼까요?':''}</p><div class="worksheet">활동지 5번에 적어요</div></section>`;
 }
-const slopeMessages=['맞아요. 약 2200 km씩 늘어나요.','맞아요. 약 17600 km씩 멀어져요. 기울기를 알면 멀리 있는 은하의 빠르기도 알 수 있어요.'];
-function checkSlope(index,value){
-  if(step!==6||!Number.isInteger(index)||index<0||index>1||(index===1&&!state.slopeDone[0])||state.slopeDone[index])return;
-  state.slopeAnswers[index]=value;
-  const raw=value.trim(),n=Number(raw.replace(/,/g,''));
-  const valid=/^(?:[0-9]+|[0-9]{1,3}(?:,[0-9]{3})+)(?:\.[0-9]+)?$/.test(raw);
-  const correct=valid&&(index===0?n>=2000&&n<=2400:n>=16000&&n<=19200);
-  const feedback=$(`#slopeFeedback${index}`);
-  if(!correct){feedback.textContent=index===0?'세로 값을 가로 값으로 나누어 볼까요?':'1억 광년마다 늘어나는 값에 8을 곱해 볼까요?';return;}
-  state.slopeDone[index]=true;
-  feedback.className='success';feedback.textContent=slopeMessages[index];
-  $(`#slopeAnswer${index}`).readOnly=true;
-  $(`[data-slope="${index}"] button`).disabled=true;
-  if(index===0){$('[data-slope="1"]').hidden=false;$('#slopeAnswer1').focus();}
-}
-document.addEventListener('submit',e=>{
-  const form=e.target.closest('[data-slope]');if(!form)return;
-  e.preventDefault();const index=Number(form.dataset.slope);checkSlope(index,$(`#slopeAnswer${index}`).value);
-});
-document.addEventListener('input',e=>{
-  const form=e.target.closest('[data-slope]');if(form)state.slopeAnswers[Number(form.dataset.slope)]=e.target.value;
-});
 function success(text){return `<div class="success" role="status"><b><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12L10 17M10 17L20 6"/></svg></b>${text}</div>`;}
 let mode='connecting', serverStep=0, keyStep=1, failedSince=0, pollBusy=false, pollTimer, watchdog, helloPending=false, reportedStep=null, boardStep=null;
 const studentId = crypto.randomUUID();
@@ -336,9 +314,8 @@ function render(){
     drawCenter();
   }else{
     const g=GALAXIES.find(g=>g.id==='m31');
-    main.innerHTML = `<h1 class="finish-title">다 했어요! 활동지를 다시 확인해 보세요.</h1><section class="challenge panel"><div class="eyebrow">선생님을 기다리는 동안 · 도전</div><div class="challenge-card">${galaxyPhoto(g)}<div><strong>${esc(g.name)}</strong><p>거리 ${number(g.distance*10000)}만 광년<br>1초에 약 ${number(Math.abs(g.speed))} km씩 다가와요</p></div></div><h2>모든 은하가 멀어진다면서, 안드로메다은하는 왜 다가올까요?</h2>${options(['아주 가까워서 서로 끌어당기는 힘이 더 크기 때문','우주가 줄어들고 있기 때문','안드로메다은하가 우주의 중심이기 때문'],'challenge',state.challenge,0)}${state.challenge?success('아주 가까운 은하끼리는 서로 끌어당기는 힘이 우주가 늘어나는 효과보다 커서 다가올 수 있어요.'):''}<p class="feedback" id="feedback" role="status"></p></section>${slopeActivity()}<div class="end-tools">${button('사진 출처','credits','','quiet')}${button('처음부터 다시','restart','','quiet')}</div>`;
+    main.innerHTML = `<h1 class="finish-title">다 했어요! 활동지를 다시 확인해 보세요.</h1><section class="challenge panel"><div class="eyebrow">선생님을 기다리는 동안 · 도전</div><div class="challenge-card">${galaxyPhoto(g)}<div><strong>${esc(g.name)}</strong><p>거리 ${number(g.distance*10000)}만 광년<br>1초에 약 ${number(Math.abs(g.speed))} km씩 다가와요</p></div></div><h2>모든 은하가 멀어진다면서, 안드로메다은하는 왜 다가올까요?</h2>${options(['아주 가까워서 서로 끌어당기는 힘이 더 크기 때문','우주가 줄어들고 있기 때문','안드로메다은하가 우주의 중심이기 때문'],'challenge',state.challenge,0)}${state.challenge?success('아주 가까운 은하끼리는 서로 끌어당기는 힘이 우주가 늘어나는 효과보다 커서 다가올 수 있어요.'):''}<p class="feedback" id="feedback" role="status"></p></section>${extensionActivity()}<div class="end-tools">${button('사진 출처','credits','','quiet')}${button('처음부터 다시','restart','','quiet')}</div>`;
   }
-  if(step===6)drawGraph();
   syncNavigation();
   if(!teacherMode&&!board&&!demo&&mode==='server'&&reportedStep!==step){reportedStep=step;pollStudent();}
 }
@@ -356,13 +333,8 @@ function drawGraph(){
   for(let i=0;i<=5;i++){const x=left+(xmax-left)*i/5;out+=`<path d="M${x} ${top}V${ymax}" stroke="#29365a"/>`+text(x,ymax+25,i);}
   out+=`<path d="M${left} ${top}V${ymax}H${xmax}" fill="none" stroke="#9ba9d1" stroke-width="2"/>`;
   out+=text((left+xmax)/2,h-12,'지구에서의 거리(억 광년)',w<450?15:19,'middle','#eef0ff');
-  if(step===6||step===3&&state.rule1){const slope=sample.reduce((s,g)=>s+g.distance*g.speed,0)/sample.reduce((s,g)=>s+g.distance*g.distance,0);const end=graphPoint(step===6?sample[sample.length-1]:{distance:5,speed:5*slope},d);out+=`<path class="trend" d="M${left} ${ymax}L${end[0]} ${end[1]}" fill="none" stroke="#74c9ca" stroke-width="3" opacity=".45"/>`;}
-  sample.filter(g=>step===3||step===6||state.seen.has(g.id)).forEach((g,i)=>{const [x,y]=graphPoint(g,d);const rightSide=g.distance>3.8;const lx=rightSide?x-11:x+11;out+=`<circle id="point-${g.id}" cx="${x}" cy="${y}" r="6" fill="#63d7db" stroke="#ecfaff" stroke-width="1.5"/>`+text(lx,y-11,shortName(g),w<450?11:14,rightSide?'end':'start','#e4eaff');});
-  if(step===6){
-    const [x,y]=graphPoint(sample[sample.length-1],d);
-    out+=`<path d="M${left} ${ymax}H${x}V${y}" fill="none" stroke="#f4b942" stroke-width="2" stroke-dasharray="6 5"/><circle class="slope-origin" cx="${left}" cy="${ymax}" r="9" fill="#f4b942"/><circle class="slope-end" cx="${x}" cy="${y}" r="11" fill="none" stroke="#f4b942" stroke-width="3"/>`;
-    out+=text(left+14,ymax-16,'원점',font,'start','#f4b942')+text(x-14,y+28,'4.7억 광년, 10500 km',w<450?12:17,'end','#f4b942');
-  }
+  if(step===3&&state.rule1){const rate=sample.reduce((s,g)=>s+g.distance*g.speed,0)/sample.reduce((s,g)=>s+g.distance*g.distance,0);const end=graphPoint({distance:5,speed:5*rate},d);out+=`<path class="trend" d="M${left} ${ymax}L${end[0]} ${end[1]}" fill="none" stroke="#74c9ca" stroke-width="3" opacity=".45"/>`;}
+  sample.filter(g=>step===3||state.seen.has(g.id)).forEach((g,i)=>{const [x,y]=graphPoint(g,d);const rightSide=g.distance>3.8;const lx=rightSide?x-11:x+11;out+=`<circle id="point-${g.id}" cx="${x}" cy="${y}" r="6" fill="#63d7db" stroke="#ecfaff" stroke-width="1.5"/>`+text(lx,y-11,shortName(g),w<450?11:14,rightSide?'end':'start','#e4eaff');});
   svg.innerHTML=out;
 }
 function drawGalaxy(ctx,x,y,size,shape,rotation=0,color='#cad6ed'){
@@ -460,6 +432,7 @@ function act(target){
   else if(action==='observer')observe(Number(value));
   else if(action==='centerAnswer'&&state.visits.size>=3){if(value==='1'){state.centerAnswer=true;render();}else feedback('고른 은하를 바꿔도 다른 은하들이 모두 멀어졌어요. 특별한 한 곳이 있었나요?');}
   else if(action==='challenge'){if(value==='0'){state.challenge=true;render();}else feedback('아주 가까운 은하끼리는 서로 끌어당기는 힘이 우주가 늘어나는 효과보다 클 수 있어요. 다시 골라 보세요.');}
+  else if(action==='extensionAnswer'&&step===6&&state.extensionAnswer!==0&&['0','1','2'].includes(value)){state.extensionAnswer=Number(value);render();}
   else if(action==='credits')showCredits();
   else if(action==='restart'){resetState();moveTo(0);}
 }
@@ -478,7 +451,7 @@ $('#previous').addEventListener('click',()=>moveTo(step-1));
 document.addEventListener('keydown',e=>{if(teacherMode||board||e.target?.closest('input,textarea')||$('#creditsDialog').open||e.altKey||e.ctrlKey||e.metaKey||busy)return;if(e.key==='ArrowRight'){e.preventDefault();if(canAdvance())moveTo(step+1);}else if(e.key==='ArrowLeft'){e.preventDefault();moveTo(step-1);}});
 $('#closeCredits').addEventListener('click',()=>$('#creditsDialog').close());
 if(document.fullscreenEnabled&&document.documentElement.requestFullscreen){$('#fullscreen').hidden=false;$('#fullscreen').addEventListener('click',async()=>{try{if(document.fullscreenElement)await document.exitFullscreen();else await document.documentElement.requestFullscreen();}catch{$('#fullscreen').hidden=true;}});document.addEventListener('fullscreenchange',()=>{$('#fullscreen').innerHTML=document.fullscreenElement?'<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4H4V9M15 4H20V9M20 15V20H15M9 20H4V15"/></svg> 전체 화면 닫기':'<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4H4V9M15 4H20V9M20 15V20H15M9 20H4V15"/></svg> 전체 화면';});}
-new ResizeObserver(()=>{if(step===2||step===3||step===6)drawGraph();else if(step===4)drawModel();else if(step===5)drawCenter();}).observe(main);
+new ResizeObserver(()=>{if(step===2||step===3)drawGraph();else if(step===4)drawModel();else if(step===5)drawCenter();}).observe(main);
 function applyRequestedStep(){
   const requested=Number(params.get('step'));
   if(!Number.isInteger(requested)||requested<1||requested>5)return;
