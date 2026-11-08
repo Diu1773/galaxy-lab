@@ -353,13 +353,27 @@ function drawModel(){
   modelGalaxies.forEach((g,i)=>{const [x,y]=p(i);drawGalaxy(ctx,x,y,i<4?17:13,'타원',i*.6,i<2?'#66dce0':i<4?'#f4b942':'#cad6ed');if(i<4){ctx.strokeStyle=i<2?'#66dce0':'#f4b942';ctx.lineWidth=2;ctx.beginPath();ctx.arc(x,y,18,0,Math.PI*2);ctx.stroke();canvasText(ctx,['ㄱ','ㄴ','ㄷ','ㄹ'][i],x,y+32,ctx.strokeStyle,w<450?17:20);}});
 }
 const skyGalaxies=Array.from({length:20},(_,i)=>({x:(i%4)-1.5+Math.sin(i*2.1)*.045,y:Math.floor(i/4)-2+Math.cos(i*1.7)*.08,shape:i%3===0?'타원':'나선'}));
+const centerPhotos=GALAXIES.map(g=>{
+  const image=new Image();
+  image.onload=()=>{if(step===5)drawCenter();};
+  image.src=`hubble_img/${g.id}.jpg`;
+  return image;
+});
 function drawCenter(){
   const c=canvasContext('#centerScene canvas');if(!c)return;const {ctx,w,h}=c;ctx.clearRect(0,0,w,h);
   const ref=state.observer===null?{x:0,y:0}:skyGalaxies[state.observer],sx=(w-72)/4,sy=(h-94)/5,s=state.expansion;
   scenePositions=skyGalaxies.map(g=>({x:w/2+(g.x-ref.x)*sx*s,y:h/2+(g.y-ref.y)*sy*s}));
+  const photoRadius=i=>Math.min(25,sx*.4,sy*.4)*(.8+(i%4)/15);
   scenePositions.forEach((p,i)=>{
-    if(state.observer!==null&&i!==state.observer&&s>1.01){const dx=(p.x-w/2)*.18,dy=(p.y-h/2)*.18,len=Math.hypot(dx,dy),angle=Math.atan2(dy,dx);if(len>0){const startX=p.x+Math.cos(angle)*17,startY=p.y+Math.sin(angle)*17,ex=startX+dx,ey=startY+dy;ctx.strokeStyle='#66dce0';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(startX,startY);ctx.lineTo(ex,ey);ctx.lineTo(ex-7*Math.cos(angle-.45),ey-7*Math.sin(angle-.45));ctx.moveTo(ex,ey);ctx.lineTo(ex-7*Math.cos(angle+.45),ey-7*Math.sin(angle+.45));ctx.stroke();}}
-    drawGalaxy(ctx,p.x,p.y,20,'타원',i*.7);
+    const image=centerPhotos[i%centerPhotos.length],r=photoRadius(i);
+    if(image.complete&&image.naturalWidth>0){
+      ctx.save();ctx.beginPath();ctx.arc(p.x,p.y,r,0,Math.PI*2);ctx.clip();
+      ctx.drawImage(image,p.x-r,p.y-r,r*2,r*2);ctx.restore();
+    }else drawGalaxy(ctx,p.x,p.y,20,'타원',i*.7);
+  });
+  scenePositions.forEach((p,i)=>{
+    const r=photoRadius(i);
+    if(state.observer!==null&&i!==state.observer&&s>1.01){const dx=(p.x-w/2)*.18,dy=(p.y-h/2)*.18,len=Math.hypot(dx,dy),angle=Math.atan2(dy,dx);if(len>0){const startX=p.x+Math.cos(angle)*(r+4),startY=p.y+Math.sin(angle)*(r+4),ex=startX+dx,ey=startY+dy;ctx.strokeStyle='#66dce0';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(startX,startY);ctx.lineTo(ex,ey);ctx.lineTo(ex-7*Math.cos(angle-.45),ey-7*Math.sin(angle-.45));ctx.moveTo(ex,ey);ctx.lineTo(ex-7*Math.cos(angle+.45),ey-7*Math.sin(angle+.45));ctx.strokeStyle='#070a1f';ctx.lineWidth=5;ctx.stroke();ctx.strokeStyle='#66dce0';ctx.lineWidth=2;ctx.stroke();}}
     const hit=$(`[data-action="observer"][data-value="${i}"]`);hit.style.left=`${p.x}px`;hit.style.top=`${p.y}px`;hit.hidden=p.x<28||p.x>w-28||p.y<28||p.y>h-28;hit.disabled=busy;
   });
 }
