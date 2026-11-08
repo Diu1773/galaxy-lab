@@ -344,11 +344,17 @@ function drawGalaxy(ctx,x,y,size,shape,rotation=0,color='#cad6ed'){
 }
 function canvasContext(selector){const c=$(selector);if(!c)return null;const w=c.clientWidth,h=c.clientHeight,dpr=Math.min(devicePixelRatio||1,2);c.width=Math.round(w*dpr);c.height=Math.round(h*dpr);const ctx=c.getContext('2d');ctx.setTransform(dpr,0,0,dpr,0,0);return {ctx,w,h};}
 function canvasText(ctx,text,x,y,color='#eef0ff',size=17){ctx.save();ctx.font=`700 ${size}px "Malgun Gothic",sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.lineWidth=5;ctx.strokeStyle='#070a1f';ctx.strokeText(text,x,y);ctx.fillStyle=color;ctx.fillText(text,x,y);ctx.restore();}
-const modelGalaxies=[[-1,-1],[1,-1],[-2,1],[2,1],[-3,-2],[0,-2.5],[3,-2],[-3,0],[3,0],[-3,2],[0,2.5],[3,2],[-1.5,-2.5],[1.6,-2.4],[-.3,.3],[-1,2.4],[1.4,2.5],[2.5,-1.1]];
+const modelGalaxies=[[-2,-2],[0,-2],[-2,2],[2,2],[-3,-.7],[-3,.7],[3,-2.5],[3,-1],[3,.5],[-3,2.5],[0,2.5],[3,2.5],[-3,-2.5],[1.5,-2.5],[-.5,0],[1,0],[-1,1],[2,-.7]];
 function drawModel(){
   const c=canvasContext('#model canvas');if(!c)return;const {ctx,w,h}=c,u=Math.min(w/12,h/9),s=state.growth;ctx.clearRect(0,0,w,h);$('#ruler').style.width=`${u}px`;
-  ctx.strokeStyle='#344563';ctx.lineWidth=1;for(let i=-12;i<=12;i++){ctx.beginPath();ctx.moveTo(w/2+i*u*s,0);ctx.lineTo(w/2+i*u*s,h);ctx.stroke();ctx.beginPath();ctx.moveTo(0,h/2+i*u*s);ctx.lineTo(w,h/2+i*u*s);ctx.stroke();}
+  ctx.strokeStyle='#344563';ctx.lineWidth=1;for(let i=-12;i<=12;i++){ctx.beginPath();ctx.moveTo(w/2+i*u,0);ctx.lineTo(w/2+i*u,h);ctx.stroke();ctx.beginPath();ctx.moveTo(0,h/2+i*u);ctx.lineTo(w,h/2+i*u);ctx.stroke();}
   const p=(index)=>[w/2+modelGalaxies[index][0]*u*s,h/2+modelGalaxies[index][1]*u*s];
+  modelGalaxies.forEach((g,i)=>{
+    const x0=w/2+g[0]*u,y0=h/2+g[1]*u,[x,y]=p(i);
+    ctx.save();ctx.strokeStyle=i<2?'#66dce0':i<4?'#f4b942':'#cad6ed';ctx.globalAlpha=i<4?.45:.18;ctx.lineWidth=i<4?2:1;
+    ctx.beginPath();ctx.moveTo(x0,y0);ctx.lineTo(x,y);ctx.stroke();
+    ctx.setLineDash([3,4]);ctx.beginPath();ctx.arc(x0,y0,i<4?18:13,0,Math.PI*2);ctx.stroke();ctx.restore();
+  });
   [[0,1,'#66dce0',2],[2,3,'#f4b942',4]].forEach(([a,b,color,initial])=>{const p1=p(a),p2=p(b);ctx.strokeStyle=color;ctx.lineWidth=3;ctx.setLineDash([5,5]);ctx.beginPath();ctx.moveTo(...p1);ctx.lineTo(...p2);ctx.stroke();ctx.setLineDash([]);canvasText(ctx,`${Number((initial*s).toFixed(1))}칸`,(p1[0]+p2[0])/2,p1[1]-23,color,w<450?16:20);});
   modelGalaxies.forEach((g,i)=>{const [x,y]=p(i);drawGalaxy(ctx,x,y,i<4?17:13,'타원',i*.6,i<2?'#66dce0':i<4?'#f4b942':'#cad6ed');if(i<4){ctx.strokeStyle=i<2?'#66dce0':'#f4b942';ctx.lineWidth=2;ctx.beginPath();ctx.arc(x,y,18,0,Math.PI*2);ctx.stroke();canvasText(ctx,['ㄱ','ㄴ','ㄷ','ㄹ'][i],x,y+32,ctx.strokeStyle,w<450?17:20);}});
 }
