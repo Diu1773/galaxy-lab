@@ -114,7 +114,7 @@ const main = $('#main');
 const sample = GALAXIES.filter(g => g.id !== 'm31');
 const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
 const labels = ['탐구를 시작해요','예상','자료','규칙','모형','중심','탐구를 마쳤어요'];
-const bands = ['','활동지 탐구 <span class="step-number">1</span>번에 내 예상을 적어요','활동지 탐구 <span class="step-number">2</span>번 표에 옮겨 적어요','활동지 탐구 <span class="step-number">3</span>번에 먼저 써요','활동지 탐구 <span class="step-number">4</span>번 표를 채워요','활동지 탐구 <span class="step-number">5</span>번 빈칸을 채워요'];
+const bands = ['','활동지 탐구 <span class="step-number">1</span>번에 내 예상을 적어요','활동지 탐구 <span class="step-number">2</span>번 그래프에 점을 찍어요','활동지 탐구 <span class="step-number">3</span>번에 먼저 써요','활동지 탐구 <span class="step-number">4</span>번 표를 채워요','활동지 탐구 <span class="step-number">5</span>번 빈칸을 채워요'];
 const guesses = ['더 빠르게 멀어진다','더 느리게 멀어진다','똑같은 빠르기로 멀어진다'];
 const esc = value => String(value).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const shortName = g => g.name.startsWith('(') ? g.name.slice(1).split(',')[0] : g.name.split(' (')[0];
