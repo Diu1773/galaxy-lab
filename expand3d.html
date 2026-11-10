@@ -5,20 +5,28 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
 <title>어디에서 보아도, 우주는 팽창한다</title>
 <style>
-:root{color-scheme:dark;--ink:#edf5ff;--muted:#b0bfd3;--cyan:#8ce6ed;--gold:#ffd38d;--panel:rgba(10,20,37,.88)}
-*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#030712;color:var(--ink);font-family:"Malgun Gothic","Apple SD Gothic Neo",sans-serif}button,input{font:inherit}button{min-height:56px;padding:12px 22px;border:1px solid #435369;border-radius:13px;background:#17253b;color:var(--ink);font-size:19px;font-weight:700;cursor:pointer}button:hover{background:#293e59;border-color:var(--cyan)}button:focus-visible,input:focus-visible,canvas:focus-visible{outline:3px solid var(--cyan);outline-offset:3px}button:disabled{opacity:.45;cursor:default}canvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none;outline:none}header{position:absolute;top:30px;left:36px;pointer-events:none}.eyebrow{font-size:14px;color:var(--cyan);letter-spacing:3px}h1{margin:9px 0;font-size:clamp(24px,2.4vw,38px);letter-spacing:-1px}header p{margin:0;color:var(--muted);font-size:16px}.panel{background:var(--panel);border:1px solid #293b52;border-radius:18px;box-shadow:0 12px 40px #0003}.info{position:absolute;top:28px;right:30px;width:300px;padding:21px 23px;pointer-events:none}.info h2{font-size:22px;margin:0 0 15px}.rule{font-size:16px;line-height:1.8;color:var(--muted)}.rule strong{color:var(--cyan);font-weight:500}.rule:last-of-type strong{color:var(--gold)}.scale{display:flex;justify-content:space-between;font-size:14px;margin-top:18px;color:var(--muted)}.track{height:4px;margin-top:9px;border-radius:4px;background:#2b384d;overflow:hidden}.track i{display:block;height:100%;width:0;background:var(--cyan)}.measure{position:absolute;left:30px;bottom:154px;width:310px;padding:18px 22px;pointer-events:none}.measure h2{font-size:15px;font-weight:500;color:var(--muted);margin:0 0 12px}.distance-row{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:10px;font-size:16px}.distance-row span:last-child{font-size:21px;font-variant-numeric:tabular-nums;color:var(--cyan)}.measure small{display:block;color:var(--muted);margin-top:13px;font-size:12px}.bottom{position:absolute;bottom:23px;left:30px;right:30px;display:flex;align-items:end;justify-content:space-between;gap:16px}.controls{display:flex;gap:10px;flex-wrap:wrap}.controls button:first-child{background:#a7e5e7;color:#09202c;border-color:#a7e5e7}.help{position:absolute;bottom:98px;left:36px;color:var(--muted);font-size:14px;line-height:1.8;pointer-events:none}.hint{max-width:370px;text-align:right;color:var(--muted);font-size:13px;line-height:1.9}.jump{display:flex;align-items:center;gap:7px;margin-bottom:8px;justify-content:flex-end}.jump label{font-size:14px}.jump input{width:75px;height:46px;padding:8px;border:1px solid #435369;border-radius:10px;background:#0e192a;color:var(--ink);font-size:18px}.jump button{min-height:46px;padding:8px 15px;font-size:16px}.question{position:absolute;top:38%;left:0;right:0;text-align:center;font-size:clamp(22px,2.4vw,36px);font-weight:700;padding:24px;background:linear-gradient(90deg,transparent,#071424ed 25%,#071424ed 75%,transparent);pointer-events:none;opacity:1;transition:opacity 1.4s}.question.gone{opacity:0}.status{position:absolute;top:142px;left:36px;color:var(--gold);font-size:17px;pointer-events:none}.target{position:absolute;left:50%;bottom:155px;transform:translateX(-50%);max-width:46%;text-align:center;color:var(--gold);background:#101b2be8;border:1px solid #776143;border-radius:12px;padding:12px 20px;font-size:17px;pointer-events:none}.target:empty{display:none}.restart{animation:attention 1.4s infinite alternate;border-color:var(--gold);color:var(--gold)}@keyframes attention{to{box-shadow:0 0 0 5px #ffd38d33;background:#3c3020}}@media(max-width:1350px){header{top:22px;left:25px}.info{top:20px;right:22px;width:273px;padding:17px 20px}.info h2{font-size:20px}.rule{font-size:15px}.measure{left:22px;bottom:144px;width:278px;padding:16px 18px}.bottom{left:22px;right:22px;bottom:18px}button{font-size:17px;padding:12px 16px}.help{left:25px;bottom:89px;font-size:13px}.hint{font-size:12px}.status{top:128px;left:25px}.target{bottom:148px;font-size:15px}.question{top:42%}}
-@media(max-width:800px){header{left:16px;top:14px}h1{font-size:22px}header p,.eyebrow{font-size:12px}.info{top:108px;right:12px;width:224px;padding:12px}.info h2{font-size:17px;margin-bottom:8px}.rule{font-size:12px}.scale{margin-top:9px}.measure{left:12px;bottom:174px;width:220px;padding:12px}.measure h2{font-size:12px}.distance-row{font-size:13px}.distance-row span:last-child{font-size:17px}.bottom{left:12px;right:12px;bottom:12px;display:block}.controls{gap:7px}.controls button{flex:1;padding:10px;min-height:50px;font-size:14px}.hint{max-width:none;display:flex;justify-content:space-between;align-items:center;text-align:left;line-height:1.3;margin-top:9px}.jump{margin:0}.jump label{font-size:12px}.jump input{width:58px}.help{bottom:133px;left:16px;font-size:11px}.status{top:81px;left:16px;font-size:13px}.target{bottom:180px;max-width:54%;left:70%;font-size:13px}.question{font-size:20px;padding:18px 25px}.hint>span{max-width:42%}}
+:root{color-scheme:dark;--ink:#edf5ff;--muted:#b0bfd3;--cyan:#8ce6ed;--gold:#ffd38d;--panel:rgba(10,20,37,.92);--edge:30px;--map:420px}
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#030712;color:var(--ink);font-family:"Malgun Gothic","Apple SD Gothic Neo",sans-serif}
+button,input{font:inherit}button{min-height:56px;padding:12px 22px;border:1px solid #435369;border-radius:12px;background:#17253b;color:var(--ink);font-size:20px;font-weight:700;cursor:pointer;white-space:nowrap}button:hover{background:#293e59;border-color:var(--cyan)}button:focus-visible,input:focus-visible,canvas:focus-visible{outline:3px solid var(--cyan);outline-offset:3px}button:disabled{opacity:.45;cursor:default}
+canvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none;outline:none}header{position:absolute;top:var(--edge);left:var(--edge);pointer-events:none}h1{margin:0;font-size:38px;letter-spacing:-1px;white-space:nowrap}
+.panel{background:var(--panel);border:1px solid #293b52;border-radius:18px}.info{position:absolute;top:var(--edge);right:var(--edge);width:330px;padding:22px}.info h2{font-size:24px;margin:0 0 18px}.scale{display:flex;justify-content:space-between;gap:12px;font-size:17px;color:var(--muted)}#scale{color:var(--cyan);font-variant-numeric:tabular-nums}.track{height:6px;margin-top:10px;border-radius:4px;background:#2b384d;overflow:hidden}.track i{display:block;height:100%;width:0;background:var(--cyan)}.speeds{display:flex;gap:8px;margin-top:18px}.speeds button{flex:1;min-height:48px;padding:8px;font-size:19px}.speeds button[aria-pressed="true"]{background:var(--cyan);border-color:var(--cyan);color:#09202c}
+.measure{position:absolute;left:var(--edge);bottom:126px;width:410px;padding:22px;pointer-events:none}.measure h2{font-size:20px;color:var(--muted);margin:0 0 18px;font-weight:500}.distance-row{display:grid;grid-template-columns:80px 70px 70px 1fr;align-items:center;gap:10px;margin-top:16px;font-size:20px}.reading{text-align:right;color:var(--cyan);font-variant-numeric:tabular-nums}.distance-head{font-size:17px;color:var(--muted)}.distance-head span:not(:first-child){text-align:right}.speed-track{height:10px;border-radius:5px;background:#2b384d;overflow:hidden}.speed-track i{display:block;height:100%;background:var(--gold);border-radius:5px}
+.radar{position:absolute;right:var(--edge);bottom:126px;width:calc(var(--map) + 36px);padding:18px;pointer-events:none}.radar h2{font-size:22px;margin:0 0 6px}.radar canvas{position:static;display:block;width:var(--map);height:var(--map)}.radar p{font-size:18px;color:var(--muted);margin:8px 0 0;white-space:nowrap}
+.bottom{position:absolute;bottom:24px;left:var(--edge);right:var(--edge);display:flex;align-items:end;justify-content:space-between;gap:20px}.controls{display:flex;gap:10px}.controls button:first-child{background:#a7e5e7;color:#09202c;border-color:#a7e5e7}.hint{text-align:right;color:var(--muted);font-size:18px;white-space:nowrap}.jump{display:flex;align-items:center;gap:10px;margin:10px 0 0;justify-content:flex-end}.jump label{font-size:18px}.jump input{width:84px;height:48px;padding:8px;border:1px solid #435369;border-radius:10px;background:#0e192a;color:var(--ink);font-size:20px}.jump button{min-height:48px;padding:8px 18px;font-size:18px}
+.question{position:absolute;top:30%;left:25%;right:26%;text-align:center;font-size:32px;line-height:1.6;font-weight:700;padding:24px;background:#071424ed;border-radius:18px;pointer-events:none;opacity:1;transition:opacity 1s}.question.gone{opacity:0}.status{position:absolute;top:90px;left:var(--edge);max-width:calc(100% - 410px);color:var(--gold);font-size:20px;pointer-events:none}.target{position:absolute;left:var(--edge);top:126px;max-width:calc(100% - 410px);color:var(--gold);font-size:20px;pointer-events:none}.target:empty{display:none}.restart{border-color:var(--gold);color:var(--gold)}
+@media(max-width:1350px),(max-height:850px){:root{--edge:22px;--map:290px}h1{font-size:30px}.info{width:290px;padding:18px}.info h2{font-size:21px;margin-bottom:12px}.scale{font-size:15px}.speeds{margin-top:14px}.speeds button{font-size:17px;min-height:44px}.measure{width:360px;bottom:122px;padding:18px}.measure h2{font-size:18px;margin-bottom:14px}.distance-row{grid-template-columns:70px 60px 60px 1fr;gap:8px;font-size:18px;margin-top:13px}.distance-head{font-size:15px}.radar{padding:16px;bottom:122px;width:calc(var(--map) + 32px)}.radar h2{font-size:20px}.radar p{font-size:15px}button{font-size:18px;padding:12px 16px;min-height:52px}.hint{font-size:16px}.bottom{bottom:20px}.jump{margin-top:8px}.jump label,.jump button{font-size:16px}.question{left:30%;right:29%;font-size:25px;padding:20px}.status{top:70px;font-size:18px}.target{top:102px;font-size:18px}}
 </style>
 </head>
 <body>
 <canvas id="space" tabindex="0" aria-label="1인칭 우주 공간. 드래그나 방향키로 둘러보고 은하를 누르면 이동합니다. Tab으로 은하를 고르고 Enter로 이동합니다. Escape를 누르면 단추로 나갑니다."></canvas>
-<header><div class="eyebrow">우주 팽창 관찰실</div><h1>어디에서 보아도, 멀어지는 은하</h1><p>은하 사이 공간이 늘어나는 모습을 둘러보세요.</p></header>
-<aside class="panel info"><h2 id="home">지금 내 은하: 1번</h2><div class="rule">가까운 은하: <strong>천천히 멀어짐</strong></div><div class="rule">먼 은하: <strong>빠르게 멀어짐</strong></div><div class="scale"><span id="mode">저절로 팽창하는 중</span><span id="scale">1.00배</span></div><div class="track"><i id="progress"></i></div></aside>
+<header><h1>어디에서 보아도, 멀어지는 은하</h1></header>
+<aside class="panel info"><h2 id="home">지금 내 은하: 1번</h2><div class="scale"><span id="mode">저절로 팽창하는 중</span><span id="scale">1.00배</span></div><div class="track"><i id="progress"></i></div><div class="speeds" role="group" aria-label="팽창 빠르기"><button type="button" data-speed="1" aria-pressed="true">1배속</button><button type="button" data-speed="2" aria-pressed="false">2배속</button><button type="button" data-speed="4" aria-pressed="false">4배속</button></div></aside>
 <div class="status" id="status" role="status" aria-live="polite"></div>
-<aside class="panel measure"><h2>가까운 은하까지의 거리 (칸)</h2><div id="distances"></div><small>이곳에 왔을 때 거리 / 지금 거리</small></aside>
+<aside class="panel measure"><h2>가까운 은하까지의 거리 (칸)</h2><div class="distance-row distance-head"><span>은하</span><span>처음</span><span>지금</span><span>빠르기</span></div><div id="distances"></div></aside>
+<aside class="panel radar"><h2>위에서 본 모습</h2><canvas id="radar" width="540" height="540" role="img" aria-label="내 은하 중심의 위에서 본 지도. 흐린 점은 처음 자리, 화살표 길이는 멀어지는 빠르기입니다."></canvas><p>화살표가 길수록 빠르게 멀어져요</p></aside>
 <div class="target" id="target" role="status" aria-live="polite"></div>
-<div class="help">드래그 / 방향키: 둘러보기 &nbsp; Tab: 은하 선택 &nbsp; Enter: 이동<br>Space: 멈춤 / 계속 &nbsp; R: 처음으로 &nbsp; N: 무작위 이동 &nbsp; F: 전체 화면</div>
-<div class="bottom"><nav class="controls" aria-label="시뮬레이션 조작"><button id="pause" type="button">멈춤</button><button id="reset" type="button">처음으로</button><button id="random" type="button">다른 은하로 가기</button><button id="full" type="button">전체 화면</button></nav><div class="hint"><span>은하를 누르면 그곳이 내 은하가 됩니다.<br>은하 자체의 크기는 그대로입니다.</span><form class="jump" id="jump"><label for="number">은하 번호</label><input id="number" type="number" min="1" max="100" value="2" inputmode="numeric" aria-label="이동할 은하 번호 1부터 100"><button type="submit">가기</button></form></div></div>
+
+<div class="bottom"><nav class="controls" aria-label="시뮬레이션 조작"><button id="pause" type="button">멈춤</button><button id="reset" type="button">처음으로</button><button id="random" type="button">다른 은하로 가기</button><button id="full" type="button">전체 화면</button></nav><div class="hint"><span>은하를 누르면 그 은하로 갑니다</span><form class="jump" id="jump"><label for="number">은하 번호</label><input id="number" type="number" min="1" max="100" value="2" inputmode="numeric" aria-label="이동할 은하 번호 1부터 100"><button type="submit">가기</button></form></div></div>
 <div class="question" id="question">어느 은하에서 보아도 다른 은하들이 멀어질까?</div>
 <script>
 'use strict';
@@ -42,6 +50,13 @@ const UniverseModel = (() => {
 })();
 const galaxies = UniverseModel.createGalaxies();
 const canvas = document.getElementById('space'), ctx = canvas.getContext('2d',{alpha:false});
+const radar=document.getElementById('radar'),mapCtx=radar.getContext('2d');
+const EXPANSION_RATE=1/10;
+let playbackSpeed=1;
+const speedButtons=[...document.querySelectorAll('[data-speed]')];
+function setSpeed(value){playbackSpeed=value;speedButtons.forEach(button=>button.setAttribute('aria-pressed',String(Number(button.dataset.speed)===value)));}
+speedButtons.forEach(button=>button.onclick=()=>setSpeed(Number(button.dataset.speed)));
+let mapGalaxies=[],mapScale=1,mapSpeedReference=1,speedReference=1;
 const ui = Object.fromEntries(['home','mode','scale','progress','status','target','distances','pause','reset','random','full','question','number'].map(id => [id,document.getElementById(id)]));
 let width=0,height=0,focal=0,a=1,home=0,paused=false,ended=false,yaw=0,pitch=0;
 let arrivalScale=1,travel=null,selected=-1,selectionCursor=-1,lastInteraction=0,pointer=null,visible=[],nearby=[];
@@ -70,7 +85,47 @@ function cameraPosition(){
 function rotate(x,y,z){const c=Math.cos(yaw),s=Math.sin(yaw),cp=Math.cos(pitch),sp=Math.sin(pitch),rx=c*x-s*z,rz=s*x+c*z;return {x:rx,y:cp*y-sp*rz,z:sp*y+cp*rz};}
 function project(v){return {x:width*.5+v.x*focal/v.z,y:height*.48-v.y*focal/v.z};}
 function nearest(){return galaxies.map((g,i)=>({i,d:UniverseModel.distance(g,galaxies[home],1)})).filter(g=>g.i!==home).sort((p,q)=>p.d-q.d);}
-function updateNearby(){nearby=nearest().slice(0,3);ui.distances.innerHTML=nearby.map((g,j)=>`<div class="distance-row"><span>${g.i+1}번 은하</span><span id="d${j}"></span></div>`).join('');}
+function updateNearby(){
+  const sorted=nearest();nearby=sorted.slice(0,3);
+  const origin=galaxies[home];
+  mapGalaxies=sorted.slice(0,12).map(item=>({...item,dx:galaxies[item.i].x-origin.x,dz:galaxies[item.i].z-origin.z}));
+  mapScale=.30/Math.max(...mapGalaxies.map(g=>Math.hypot(g.dx,g.dz)));
+  mapSpeedReference=Math.max(...mapGalaxies.map(g=>recessionSpeed(g)));
+  speedReference=Math.max(...nearby.map(g=>g.d))*EXPANSION_RATE;
+  ui.distances.innerHTML=nearby.map((g,j)=>`<div class="distance-row"><span>${g.i+1}번</span><span class="reading" id="initial${j}"></span><span class="reading" id="d${j}"></span><span class="speed-track" id="speed${j}" role="img"><i></i></span></div>`).join('');
+}
+function recessionSpeed(item){return item.d*a*(EXPANSION_RATE/a);}
+// 고정 축척으로 처음 자리와 현재 자리, 바깥 방향의 빠르기를 그린다.
+function drawRadar(){
+  const c=mapCtx,size=radar.clientWidth,dpr=window.devicePixelRatio||1,pixels=Math.round(size*dpr);
+  if(radar.width!==pixels||radar.height!==pixels){radar.width=pixels;radar.height=pixels;}
+  c.setTransform(pixels/size,0,0,pixels/size,0,0);c.clearRect(0,0,size,size);
+  const cx=size/2,cy=size/2,radius=size*.40,scale=radius*mapScale;
+  c.strokeStyle='#8ce6ed30';c.lineWidth=1;
+  for(const fraction of [1/3,2/3,1]){c.beginPath();c.arc(cx,cy,radius*fraction,0,Math.PI*2);c.stroke();}
+  c.beginPath();c.moveTo(cx-radius,cy);c.lineTo(cx+radius,cy);c.moveTo(cx,cy-radius);c.lineTo(cx,cy+radius);c.stroke();
+  for(const g of mapGalaxies){
+    const x=cx+g.dx*a*scale,y=cy-g.dz*a*scale,ix=cx+g.dx*arrivalScale*scale,iy=cy-g.dz*arrivalScale*scale;
+    c.strokeStyle='#8ce6ed55';c.lineWidth=1.5;c.beginPath();c.moveTo(ix,iy);c.lineTo(x,y);c.stroke();
+    c.fillStyle='#b0bfd34a';c.beginPath();c.arc(ix,iy,3,0,Math.PI*2);c.fill();
+  }
+  for(const g of mapGalaxies){
+    const x=cx+g.dx*a*scale,y=cy-g.dz*a*scale,planar=Math.hypot(g.dx,g.dz);
+    if(planar>.001){
+      const ux=g.dx/planar,uy=-g.dz/planar,length=radius*.20*recessionSpeed(g)/mapSpeedReference;
+      const sx=x+ux*8,sy=y+uy*8,ex=sx+ux*length,ey=sy+uy*length,head=Math.min(9,length*.45);
+      c.strokeStyle='#ffd38d';c.fillStyle='#ffd38d';c.lineWidth=3.5;c.lineCap='round';
+      c.beginPath();c.moveTo(sx,sy);c.lineTo(ex,ey);c.stroke();
+      c.beginPath();c.moveTo(ex,ey);c.lineTo(ex-ux*head-uy*head*.6,ey-uy*head+ux*head*.6);c.lineTo(ex-ux*head+uy*head*.6,ey-uy*head-ux*head*.6);c.closePath();c.fill();
+    }
+  }
+  for(const g of mapGalaxies){
+    const x=cx+g.dx*a*scale,y=cy-g.dz*a*scale;
+    c.fillStyle='#c2faff';c.beginPath();c.arc(x,y,5.5,0,Math.PI*2);c.fill();
+    if(nearby.some(item=>item.i===g.i)){c.font='bold 16px "Malgun Gothic",sans-serif';c.lineWidth=3;c.strokeStyle='#0a1425';c.strokeText(String(g.i+1),x+8,y-9);c.fillStyle='#edf5ff';c.fillText(String(g.i+1),x+8,y-9);}
+  }
+  c.fillStyle='#ffd38d';c.beginPath();c.arc(cx,cy,6,0,Math.PI*2);c.fill();c.font='bold 17px "Malgun Gothic",sans-serif';c.fillText('나',cx+9,cy+21);
+}
 function aim(index){const p=galaxies[home],q=galaxies[index],dx=q.x-p.x,dy=q.y-p.y,dz=q.z-p.z;targetYaw=Math.atan2(dx,dz);targetPitch=Math.atan2(dy,Math.hypot(dx,dz));}
 function announce(text){ui.status.textContent=text;}
 function choose(index){if(travel||index===home)return;selected=index;aim(index);lastInteraction=performance.now();ui.target.textContent=`${index+1}번 은하 선택 / Enter를 누르면 이동`;}
@@ -79,9 +134,9 @@ function fly(index){
   travel={from:home,to:index,t:0};selected=-1;targetYaw=null;keys.clear();lastInteraction=performance.now();
   ui.target.textContent=`${index+1}번 은하로 이동 중`;announce('관찰 장소를 바꾸는 중입니다.');ui.random.disabled=true;
 }
-function arrive(){home=travel.to;travel=null;arrivalScale=a;selectionCursor=-1;updateNearby();aim(nearby[0].i);ui.home.textContent=`지금 내 은하: ${home+1}번`;ui.target.textContent='';announce('이곳에서도 은하들이 멀어집니다.');ui.random.disabled=false;lastInteraction=performance.now();}
+function arrive(){home=travel.to;travel=null;a=1;arrivalScale=1;paused=false;ended=false;ui.pause.disabled=false;ui.pause.textContent='멈춤';ui.reset.classList.remove('restart');selectionCursor=-1;updateNearby();aim(nearby[0].i);ui.home.textContent=`지금 내 은하: ${home+1}번`;ui.target.textContent='';announce('이곳에서도 은하들이 멀어집니다.');ui.random.disabled=false;lastInteraction=performance.now();updateHud();}
 function randomJump(){const pool=nearest();fly(pool[Math.floor(Math.random()*pool.length)].i);}
-function toggle(){if(ended){announce('3배까지 관찰했습니다. 처음으로를 눌러 다시 보세요.');return;}paused=!paused;ui.pause.textContent=paused?'계속':'멈춤';announce(paused?'팽창을 멈췄습니다. 둘러보기와 이동은 할 수 있습니다.':'팽창이 계속됩니다.');updateHud();}
+function toggle(){if(ended){announce('3배 관찰 완료 · 다시 보려면 처음으로');return;}paused=!paused;ui.pause.textContent=paused?'계속':'멈춤';announce(paused?'팽창을 멈췄습니다. 둘러보기와 이동은 할 수 있습니다.':'팽창이 계속됩니다.');updateHud();}
 function reset(){a=1;home=0;arrivalScale=1;paused=false;ended=false;travel=null;selected=-1;selectionCursor=-1;yaw=0;pitch=0;targetYaw=null;keys.clear();numberBuffer='';pointer=null;lastInteraction=performance.now();ui.home.textContent='지금 내 은하: 1번';ui.pause.textContent='멈춤';ui.pause.disabled=false;ui.random.disabled=false;ui.reset.classList.remove('restart');ui.target.textContent='';announce('처음 크기에서 다시 팽창합니다.');updateNearby();updateHud();}
 async function fullscreen(){try{if(document.fullscreenElement)await document.exitFullscreen();else if(document.documentElement.requestFullscreen)await document.documentElement.requestFullscreen();else announce('브라우저의 전체 화면 기능을 이용하세요.');}catch{announce('브라우저의 전체 화면 기능을 이용하세요.');}}
 document.addEventListener('fullscreenchange',()=>{ui.full.textContent=document.fullscreenElement?'화면 줄이기':'전체 화면';});
@@ -99,21 +154,24 @@ addEventListener('keydown',e=>{
   if(e.key.startsWith('Arrow')){e.preventDefault();keys.add(e.key);targetYaw=null;lastInteraction=performance.now();return;}
   if(e.key==='Escape'){selected=-1;ui.target.textContent='';targetYaw=null;ui.pause.focus();return;}
   if(e.key==='Tab'&&e.target===canvas){e.preventDefault();const list=nearest();selectionCursor=(selectionCursor+(e.shiftKey?-1:1)+list.length)%list.length;choose(list[selectionCursor].i);return;}
+  if(['1','2','4'].includes(e.key)){e.preventDefault();if(!e.repeat)setSpeed(Number(e.key));return;}
   if(/^\d$/.test(e.key)){e.preventDefault();const now=performance.now();numberBuffer=now-numberTime<1400?numberBuffer+e.key:e.key;numberTime=now;const n=Number(numberBuffer);if(n>=1&&n<=100){ui.number.value=n;choose(n-1);}else{numberBuffer=e.key;const m=Number(numberBuffer);if(m>0){ui.number.value=m;choose(m-1);}}return;}
   if(e.key==='Enter'&&selected>=0&&e.target.tagName!=='BUTTON'){e.preventDefault();fly(selected);}
 });
 addEventListener('keyup',e=>keys.delete(e.key));
-function updateHud(){ui.scale.textContent=a.toFixed(2)+'배';ui.progress.style.width=((a-1)/2*100)+'%';ui.mode.textContent=ended?'3배까지 관찰 완료':paused?'팽창을 멈춘 상태':'저절로 팽창하는 중';nearby.forEach((g,j)=>{document.getElementById('d'+j).textContent=(g.d*arrivalScale).toFixed(1)+' / '+(g.d*a).toFixed(1);});}
-// 시야 밖 은하의 방향은 가장자리 안내로 표시한다.
-function guide(item,v,p,r,index){
-  const inView=v.z>.4&&p.x>25&&p.x<width-25&&p.y>110&&p.y<height-145;
-  let x=p.x,y=p.y;
-  if(!inView){let dx=v.x,dy=-v.y;if(v.z<0){dx=dx||.1;dy=dy||.1;}const marginX=38,top=120,bottom=height-155,cx=width*.5,cy=height*.48;const t=Math.min((cx-marginX)/Math.max(.001,Math.abs(dx)),(dy<0?cy-top:bottom-cy)/Math.max(.001,Math.abs(dy)));x=cx+dx*t;y=cy+dy*t;}
-  ctx.strokeStyle='#8ce6ed55';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(width*.5,height*.48);ctx.lineTo(x,y);ctx.stroke();
-  ctx.strokeStyle='#9aebee99';ctx.beginPath();ctx.arc(x,y,inView?r+6:6,0,Math.PI*2);ctx.stroke();
-  const label=`${item.i+1}번  ${(item.d*arrivalScale).toFixed(1)} / ${(item.d*a).toFixed(1)}${inView?'':v.z<0?' (뒤쪽)':' (옆쪽)'}`;
-  ctx.font='600 '+(width<800?13:17)+'px "Malgun Gothic",sans-serif';const tw=ctx.measureText(label).width,lx=Math.max(12,Math.min(width-tw-24,x+15)),ly=Math.max(119,Math.min(height-160,y+(index-1)*27));
-  ctx.fillStyle='#071322e8';ctx.fillRect(lx-7,ly-20,tw+14,29);ctx.fillStyle='#c2f3f3';ctx.fillText(label,lx,ly);
+function updateHud(){ui.scale.textContent=a.toFixed(2)+'배';ui.progress.style.width=((a-1)/2*100)+'%';ui.mode.textContent=ended?'3배까지 관찰 완료':paused?'팽창을 멈춘 상태':'저절로 팽창하는 중';nearby.forEach((g,j)=>{document.getElementById('initial'+j).textContent=(g.d*arrivalScale).toFixed(1);document.getElementById('d'+j).textContent=(g.d*a).toFixed(1);const speed=recessionSpeed(g),bar=document.getElementById('speed'+j);bar.firstElementChild.style.width=(100*speed/speedReference)+'%';bar.setAttribute('aria-label','빠르기 '+speed.toFixed(1)+' (상대 값)');});}
+// 화면 안의 거리표 은하 번호를 패널과 다른 이름표를 피해 그린다.
+let labelBoxes=[];
+function overlaps(p,q){return p.x<q.x+q.w+8&&p.x+p.w+8>q.x&&p.y<q.y+q.h+8&&p.y+p.h+8>q.y;}
+function guide(item,v,p,r){
+  if(v.z<=.8||p.x<0||p.x>width||p.y<0||p.y>height)return;
+  const label=`${item.i+1}번`;
+  ctx.font='600 20px "Malgun Gothic",sans-serif';
+  const w=ctx.measureText(label).width+16,h=34,offset=Math.max(18,r*.65);
+  const positions=[{x:p.x+offset,y:p.y-h/2},{x:p.x-offset-w,y:p.y-h/2},{x:p.x-w/2,y:p.y-offset-h},{x:p.x-w/2,y:p.y+offset}];
+  const box=positions.map(pos=>({...pos,w,h})).find(pos=>pos.x>=12&&pos.y>=12&&pos.x+w<=width-12&&pos.y+h<=height-12&&!labelBoxes.some(other=>overlaps(pos,other)));
+  if(!box)return;
+  labelBoxes.push(box);ctx.fillStyle='#071322e8';ctx.fillRect(box.x,box.y,w,h);ctx.fillStyle='#c2f3f3';ctx.fillText(label,box.x+8,box.y+24);
 }
 function render(now,dt){
   ctx.fillStyle='#030712';ctx.fillRect(0,0,width,height);
@@ -124,26 +182,25 @@ function render(now,dt){
   galaxies.forEach((g,i)=>{if((i>=activeCount&&!must.has(i))||(!travel&&i===home))return;const world=UniverseModel.position(g,a),v=rotate(world.x-camera.x,world.y-camera.y,world.z-camera.z);if(v.z<=.8)return;const p=project(v),r=Math.min(210,g.size*focal/v.z);if(p.x+r<0||p.x-r>width||p.y+r<0||p.y-r>height)return;list.push({...p,r,z:v.z,i});});
   list.sort((p,q)=>q.z-p.z);
   for(const p of list){const g=galaxies[p.i];ctx.save();ctx.translate(p.x,p.y);ctx.rotate(g.angle);ctx.scale(1,g.flatten);ctx.globalCompositeOperation='screen';ctx.drawImage(sprites[g.texture],-p.r,-p.r,p.r*2,p.r*2);ctx.restore();visible.push(p);
-    if(selected===p.i){ctx.strokeStyle='#ffd38d';ctx.lineWidth=2;ctx.beginPath();ctx.arc(p.x,p.y,p.r+12,0,Math.PI*2);ctx.stroke();}
-    if(p.r>10){ctx.font='14px "Malgun Gothic",sans-serif';ctx.fillStyle='#b9c9e0';ctx.fillText(String(g.id),p.x+p.r*.7+5,p.y+p.r*.5);}
   }
+  labelBoxes=[...document.querySelectorAll('header,.panel,.bottom,.status,.target,.question:not(.gone)')].filter(el=>el.textContent.trim()).map(el=>{const r=el.getBoundingClientRect();return {x:r.x,y:r.y,w:r.width,h:r.height};});
   if(!travel)nearby.forEach((item,index)=>{const g=galaxies[item.i],v=rotate((g.x-galaxies[home].x)*a,(g.y-galaxies[home].y)*a,(g.z-galaxies[home].z)*a),p=v.z>.4?project(v):{x:0,y:0};guide(item,v,p,Math.min(210,g.size*focal/Math.max(.8,v.z)),index);});
   ctx.strokeStyle='#b0d8e144';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(width*.5-7,height*.48);ctx.lineTo(width*.5+7,height*.48);ctx.moveTo(width*.5,height*.48-7);ctx.lineTo(width*.5,height*.48+7);ctx.stroke();
 }
 function frame(now){
   const dt=lastFrame?Math.min((now-lastFrame)/1000,.08):0;lastFrame=now;
-  if(!paused&&!ended){a=Math.min(3,a+dt/30);if(a>=3){ended=true;ui.pause.disabled=true;ui.pause.textContent='관찰 완료';ui.reset.classList.add('restart');announce('3배까지 팽창했습니다. 처음으로를 눌러 다시 관찰하세요.');}}
+  if(!paused&&!ended&&!travel){a=Math.min(3,a+dt*EXPANSION_RATE*playbackSpeed);if(a>=3){ended=true;ui.pause.disabled=true;ui.pause.textContent='관찰 완료';ui.reset.classList.add('restart');announce('3배 관찰 완료 · 다시 보려면 처음으로');}}
   if(travel){travel.t=Math.min(1,travel.t+dt/2.6);if(travel.t>=1)arrive();}
   const look=dt*.65;if(keys.has('ArrowLeft'))yaw-=look;if(keys.has('ArrowRight'))yaw+=look;if(keys.has('ArrowUp'))pitch+=look;if(keys.has('ArrowDown'))pitch-=look;pitch=Math.max(-1.4,Math.min(1.4,pitch));
   if(keys.size)lastInteraction=now;
   if(targetYaw!==null&&!travel){const delta=Math.atan2(Math.sin(targetYaw-yaw),Math.cos(targetYaw-yaw)),f=1-Math.exp(-dt*3);yaw+=delta*f;pitch+=(targetPitch-pitch)*f;if(Math.abs(delta)<.003&&Math.abs(targetPitch-pitch)<.003)targetYaw=null;}
   else if(!pointer&&!keys.size&&!travel&&selected<0&&now-lastInteraction>7000)yaw+=dt*.018;
-  render(now,dt);lastSceneTime=now;
+  render(now,dt);drawRadar();lastSceneTime=now;
   if(now-lastHud>100){updateHud();lastHud=now;}
   if(!document.hidden){if(!windowStart)windowStart=now;frameCount++;if(now-windowStart>3000){const fps=frameCount*1000/(now-windowStart);slowWindows=fps<45?slowWindows+1:0;if(slowWindows>=2&&activeCount>60){activeCount=Math.max(60,activeCount-10);slowWindows=0;}windowStart=now;frameCount=0;}}
   requestAnimationFrame(frame);
 }
-updateNearby();updateHud();canvas.focus({preventScroll:true});setTimeout(()=>ui.question.classList.add('gone'),6000);requestAnimationFrame(frame);
+updateNearby();updateHud();canvas.focus({preventScroll:true});setTimeout(()=>ui.question.classList.add('gone'),3000);requestAnimationFrame(frame);
 </script>
 </body>
 </html>
